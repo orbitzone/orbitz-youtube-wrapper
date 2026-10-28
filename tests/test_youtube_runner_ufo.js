@@ -7,7 +7,7 @@ const start = html.indexOf('function ufoPhase(');
 const end = html.indexOf('\n(()=>{', start);
 assert(start >= 0 && end > start, 'runner timing helpers must remain available as a deterministic block');
 const sandbox = {};
-vm.runInNewContext(`${html.slice(start, end)}\nglobalThis.ufoPhase=ufoPhase;globalThis.ufoEase=ufoEase;globalThis.obstacleTop=obstacleTop;globalThis.runnerHitsObstacle=runnerHitsObstacle;globalThis.nearestUfoCactus=nearestUfoCactus;globalThis.ufoReadyToSpawn=ufoReadyToSpawn;globalThis.ufoPose=ufoPose;globalThis.validRunnerBest=validRunnerBest;`, sandbox);
+vm.runInNewContext(`${html.slice(start, end)}\nglobalThis.ufoPhase=ufoPhase;globalThis.ufoEase=ufoEase;globalThis.obstacleTop=obstacleTop;globalThis.runnerHitsObstacle=runnerHitsObstacle;globalThis.nearestUfoCactus=nearestUfoCactus;globalThis.ufoReadyToSpawn=ufoReadyToSpawn;globalThis.ufoPose=ufoPose;globalThis.validRunnerBest=validRunnerBest;globalThis.isNewRunnerBest=isNewRunnerBest;`, sandbox);
 
 assert.equal(sandbox.ufoPhase(0), 'enter');
 assert.equal(sandbox.ufoPhase(.999), 'enter');
@@ -51,5 +51,8 @@ assert.notEqual(pose.tilt, sandbox.ufoPose({ direction: 1, phase: 0 }, 1.2, 500,
 assert.equal(sandbox.validRunnerBest(1234), true, 'valid high scores can be saved');
 assert.equal(sandbox.validRunnerBest(-1), false, 'negative scores are rejected');
 assert.equal(sandbox.validRunnerBest(1.5), false, 'fractional scores are rejected');
+assert.equal(sandbox.isNewRunnerBest(1235, 1234), true, 'a score above the previous best is a new record');
+assert.equal(sandbox.isNewRunnerBest(1234, 1234), false, 'tying the previous best is not a new record');
+assert.equal(sandbox.isNewRunnerBest(1233, 1234), false, 'a lower score is not a new record');
 
 console.log('OK: runner collisions handle flying mosquitoes, record values are valid, and UFO phases, targets and cached drawing work.');

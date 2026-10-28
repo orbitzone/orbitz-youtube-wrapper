@@ -8,4 +8,4 @@ Escopo: Linux x86_64/Flatpak/X11 ou XWayland; sem Windows/macOS, Flathub, import
 
 ## Validação local pré-publicação (27/10/2026)
 
-17 testes Python e quatro testes JavaScript passaram; `py_compile`, `desktop-file-validate`, `appstreamcli validate --no-net`, parse do manifesto Flatpak e `git diff --cached --check` passaram. Esses testes usam dados sintéticos e não consultam YouTube/Google. O build Flatpak, a execução gráfica em distribuições distintas e a reprodução com chave/conta reais dependem do CI e de validação manual posterior.
+17 testes Python e quatro testes JavaScript passaram; `py_compile`, `desktop-file-validate`, `appstreamcli validate --no-net`, parse do manifesto Flatpak e `git diff --cached --check` passaram. Esses testes usam dados sintéticos e não consultam YouTube/Google. O primeiro build Flatpak apontou que o SVG não era quadrado; o desenho foi centralizado numa tela 36×36 com teste de regressão. A nova rodada CI precisa confirmar a exportação. Execução gráfica em distribuições distintas e reprodução com chave/conta reais dependem de validação manual posterior.

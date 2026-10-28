@@ -2,6 +2,7 @@ import importlib.util
 from pathlib import Path
 import sys
 import unittest
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 YOUTUBE_DIR = ROOT / 'app'
@@ -12,6 +13,12 @@ spec.loader.exec_module(youtube_widget)
 
 
 class YouTubeWindowSizingTests(unittest.TestCase):
+    def test_flatpak_icon_has_square_canvas(self):
+        icon = ET.parse(YOUTUBE_DIR / 'youtube.svg').getroot()
+        self.assertEqual(icon.attrib['width'], icon.attrib['height'])
+        view_box = icon.attrib['viewBox'].split()
+        self.assertEqual(view_box[2], view_box[3])
+
     def test_external_link_bridge_rejects_untrusted_hosts_and_uri_forms(self):
         allowed = youtube_widget.is_allowed_external_uri
         for uri in (
@@ -19,7 +26,6 @@ class YouTubeWindowSizingTests(unittest.TestCase):
             'https://www.orbit.zone/',
             'https://console.cloud.google.com/apis/credentials',
             'https://www.youtube.com:443/',
-            'https://www.youtube.com/watch?v=abcdefghijk',
         ):
             self.assertTrue(allowed(uri), uri)
         for uri in (

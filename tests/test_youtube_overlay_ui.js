@@ -15,7 +15,7 @@ assert.match(html, /#config select option\{background-color:#252d36;color:#eee\}
 assert.match(html, /button:focus,input:focus,select:focus\{outline:2px solid #77bff0\}/);
 assert.match(html, /<a id="runner-brand" href="https:\/\/www\.orbit\.zone" target="_blank" rel="noopener">orbit\.zone<\/a>/);
 assert.match(html, /#runner-brand\{position:absolute;right:14px;bottom:10px/);
-assert.match(html, /messageHandlers\?\.orbitzOpenExternal/);
+assert.match(html, /api\('open-external',\{uri:link\.href\}\)/);
 assert.match(html, /data-i18n-title="youtube\.copy_video_link"/);
 
 const node = () => ({
@@ -36,24 +36,18 @@ nodes.get('discovery').contains = target => target === nodes.get('discovery') ||
 nodes.get('config').hidden = true;
 nodes.get('discovery').hidden = true;
 const listeners = {};
-const windowStates = [];
-const externalRequests = [], copiedLinks = [];
+const nativeActions = [];
 const document = { activeElement: nodes.get('settings'), addEventListener(type, handler) { listeners[type] = handler; } };
 let failSave = false;
 const context = vm.createContext({
   document,
-  window: { webkit: { messageHandlers: {
-    orbitzWindow: { postMessage(state) { windowStates.push(state); } },
-    orbitzOpenExternal: { postMessage(uri) { externalRequests.push(uri); } },
-    orbitzCopyLink: { postMessage(uri) { copiedLinks.push(uri); } },
-  } } },
+  window: {},
   $: id => nodes.get(id),
-  api: async () => { if (failSave) throw Error('Save failed'); return {}; },
+  api: async (action, body) => { nativeActions.push({ action, body }); if (failSave && action === 'key') throw Error('Save failed'); return {}; },
   loadRecommendations() {},
   uiText(node, value) { node.textContent = value; }, uiErrorText(node, error) { node.textContent = error.message; },
   searchCurrentTab() {}, setTab() {},
   selected: 'abcdefghijk',
-  bridgeToken: 'synthetic-token',
   uiLocale: 'pt-BR',
 });
 const start = html.indexOf("$('settings').onclick=()=>openSettings();");
@@ -65,13 +59,13 @@ listeners.click({
   preventDefault() { externalClickPrevented = true; },
 });
 assert(externalClickPrevented, 'explicit outer links avoid WebKit popup routing');
-assert.deepEqual(externalRequests, ['synthetic-token\nhttps://www.orbit.zone'], 'orbit.zone uses the authenticated native external-link bridge');
-nodes.get('copy-video-link').onclick();
-assert.deepEqual(copiedLinks, ['synthetic-token\nhttps://www.youtube.com/watch?v=abcdefghijk'], 'copy button authenticates its native clipboard bridge request');
+assert.deepEqual(nativeActions.at(-1), { action: 'open-external', body: { uri: 'https://www.orbit.zone' } }, 'orbit.zone uses the bounded local HTTP action');
+nodes.get('copy-video-link').onclick().then(() => {
+assert.deepEqual(nativeActions.at(-1), { action: 'copy-link', body: { uri: 'https://www.youtube.com/watch?v=abcdefghijk' } }, 'copy action sends only the selected YouTube URL');
 
 nodes.get('settings').onclick();
 assert.equal(nodes.get('config').hidden, false);
-assert.equal(windowStates.at(-1), 'synthetic-token\nsettings', 'opening Settings sends an authenticated size request');
+assert.deepEqual(nativeActions.at(-1), { action: 'window-state', body: { state: 'settings' } }, 'opening Settings sends a bounded window-size request');
 assert.equal(document.activeElement, nodes.get('key'), 'opening Settings focuses the API key field');
 let prevented = false;
 document.activeElement = focusables[focusables.length - 1];
@@ -98,11 +92,11 @@ Promise.resolve().then(() => Promise.resolve()).then(() => {
 
 nodes.get('query').handlers.focus();
 assert.equal(nodes.get('discovery').hidden, false, 'search focus opens the dropdown');
-assert.equal(windowStates.at(-1), 'synthetic-token\npanel', 'opening search sends authenticated panel height');
+assert.deepEqual(nativeActions.at(-1), { action: 'window-state', body: { state: 'panel' } }, 'opening search sends panel height');
 nodes.get('settings').onclick();
-assert.equal(windowStates.at(-1), 'synthetic-token\npanel', 'Settings preserves an open search panel height');
+assert.deepEqual(nativeActions.at(-1), { action: 'window-state', body: { state: 'panel' } }, 'Settings preserves an open search panel height');
 nodes.get('config-close').onclick();
-assert.equal(windowStates.at(-1), 'synthetic-token\npanel', 'closing Settings restores the search panel target');
+assert.deepEqual(nativeActions.at(-1), { action: 'window-state', body: { state: 'panel' } }, 'closing Settings restores the search panel target');
 listeners.pointerdown({ target: { insideDiscovery: true } });
 assert.equal(nodes.get('discovery').hidden, false, 'interaction inside the dropdown keeps it open');
 listeners.pointerdown({ target: {} });
@@ -113,15 +107,16 @@ assert.equal(nodes.get('discovery').hidden, true, 'keyboard focus outside closes
 nodes.get('discovery').hidden = false;
 listeners.keydown({ key: 'Escape', preventDefault() {} });
 assert.equal(nodes.get('discovery').hidden, true, 'Escape closes the dropdown');
-assert.equal(windowStates.at(-1), 'synthetic-token\nidle', 'closing an empty search panel requests authenticated compact idle height');
+assert.deepEqual(nativeActions.at(-1), { action: 'window-state', body: { state: 'idle' } }, 'closing an empty search panel requests compact idle height');
 nodes.get('screen').hidden = false;
 nodes.get('discovery').hidden = false;
 listeners.keydown({ key: 'Escape', preventDefault() {} });
-assert.equal(windowStates.at(-1), 'synthetic-token\nplayer', 'closing the panel preserves the authenticated expanded player layout');
+assert.deepEqual(nativeActions.at(-1), { action: 'window-state', body: { state: 'player' } }, 'closing the panel preserves the expanded player layout');
 nodes.get('settings').onclick();
-assert.equal(windowStates.at(-1), 'synthetic-token\nplayer', 'Settings preserves an active player height');
+assert.deepEqual(nativeActions.at(-1), { action: 'window-state', body: { state: 'player' } }, 'Settings preserves an active player height');
 nodes.get('config-close').onclick();
-assert.equal(windowStates.at(-1), 'synthetic-token\nplayer', 'closing Settings restores the active player target');
+assert.deepEqual(nativeActions.at(-1), { action: 'window-state', body: { state: 'player' } }, 'closing Settings restores the active player target');
 
 console.log('OK: YouTube settings are a fixed accessible modal; search results open as an outside-dismissible dropdown.');
+}).catch(error => { console.error(error); process.exitCode = 1; });
 }).catch(error => { console.error(error); process.exitCode = 1; });

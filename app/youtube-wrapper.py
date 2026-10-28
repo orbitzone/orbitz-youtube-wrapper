@@ -5,7 +5,6 @@ from ui_language import ui
 import json
 import re
 import secrets
-import sys
 import threading
 from urllib.parse import urlsplit
 from youtube_server import make_handler
@@ -17,7 +16,7 @@ ALLOWED_EXTERNAL_HOSTS = frozenset({
 })
 
 def is_allowed_external_uri(uri):
-    """Limit WebKit's native external-link bridge to app-owned destinations."""
+    """Limit the local app action to approved external destinations."""
     try:
         parsed = urlsplit(uri)
         if (parsed.scheme != 'https' or parsed.hostname not in ALLOWED_EXTERNAL_HOSTS
@@ -32,16 +31,6 @@ def is_allowed_external_uri(uri):
         return parsed.path == '/apis/credentials' and not parsed.query
     except (AttributeError, TypeError, ValueError):
         return False
-
-def bridge_payload(message, session_token):
-    """Accept native bridge messages only from the token-bearing top-level page."""
-    if not isinstance(message, str) or len(message) > 4096 or not session_token:
-        return None
-    supplied_token, separator, payload = message.partition('\n')
-    if (not separator or not supplied_token.isascii() or not session_token.isascii()
-            or not secrets.compare_digest(supplied_token, session_token)):
-        return None
-    return payload
 
 def target_window_height(state, workarea_height):
     """Return a compact, monitor-bounded height for a page layout state."""
@@ -122,41 +111,48 @@ def main():
                 request_page_size(resize_state['page'])
             return False
         window.connect('window-state-event',window_state_changed)
-        content_manager=WebKit2.UserContentManager()
-        content_manager.register_script_message_handler('orbitzWindow')
-        content_manager.register_script_message_handler('orbitzOpenExternal')
-        content_manager.register_script_message_handler('orbitzCopyLink')
-        def resize_message(_manager,result):
-            state=bridge_payload(result.get_js_value().to_string(),token)
-            if state in ('idle','settings','panel','player'):request_page_size(state)
-        content_manager.connect('script-message-received::orbitzWindow',resize_message)
-        view=WebKit2.WebView.new_with_user_content_manager(content_manager)
+        view=WebKit2.WebView()
         settings=view.get_settings()
         settings.set_property('enable-developer-extras',False)
         # WebKit disables the Fullscreen API by default; YouTube's iframe
         # button otherwise cannot emit enter-fullscreen for this GTK window.
         settings.set_property('enable-fullscreen',True)
         settings.set_media_playback_requires_user_gesture(False)
-        def open_external(_manager,result):
-            uri=bridge_payload(result.get_js_value().to_string(),token)
-            if uri and is_allowed_external_uri(uri):
-                try:Gio.AppInfo.launch_default_for_uri(uri,None)
-                except GLib.Error as error:print(f'Could not open YouTube link: {error}',file=sys.stderr)
-        content_manager.connect('script-message-received::orbitzOpenExternal',open_external)
-        def copy_youtube_link(_manager,result):
-            uri=bridge_payload(result.get_js_value().to_string(),token)
-            if not uri:return
-            if not re.fullmatch(r'https://www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}',uri):return
-            clipboard=Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
-            clipboard.set_text(uri,-1)
-            clipboard.store()
-        content_manager.connect('script-message-received::orbitzCopyLink',copy_youtube_link)
+        def dispatch_to_gtk(callback,value):
+            completed=threading.Event();outcome=[]
+            def run():
+                try:outcome.append((True,callback(value)))
+                except Exception as error:outcome.append((False,error))
+                completed.set();return False
+            GLib.idle_add(run)
+            if not completed.wait(5):raise RuntimeError('Ação da interface expirou.')
+            succeeded,result=outcome[0]
+            if not succeeded:raise RuntimeError('Não foi possível concluir a ação da interface.') from result
+            return result
+        def set_window_state(data):
+            state=data.get('state')
+            if state not in ('idle','settings','panel','player'):raise ValueError('Estado de janela inválido.')
+            dispatch_to_gtk(request_page_size,state)
+        def open_external(data):
+            uri=data.get('uri')
+            if not isinstance(uri,str) or not is_allowed_external_uri(uri):raise ValueError('Link externo inválido.')
+            def launch(value):Gio.AppInfo.launch_default_for_uri(value,None)
+            dispatch_to_gtk(launch,uri)
+        def copy_youtube_link(data):
+            uri=data.get('uri')
+            if not isinstance(uri,str) or not re.fullmatch(r'https://www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}',uri):
+                raise ValueError('Link de vídeo inválido.')
+            def copy(value):
+                clipboard=Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+                clipboard.set_text(value,-1);clipboard.store()
+            dispatch_to_gtk(copy,uri)
+        server.ui_actions={'window-state':set_window_state,'open-external':open_external,'copy-link':copy_youtube_link}
         def policy(view,decision,kind):
             if kind==WebKit2.PolicyDecisionType.NEW_WINDOW_ACTION:
                 # Never treat a popup requested inside the cross-origin player
                 # as an external-app launch (the native fullscreen control is
                 # handled by WebKit's fullscreen API). Outer UI links use the
-                # explicit orbitzOpenExternal bridge instead.
+                # token-protected local action endpoint instead.
                 decision.ignore();return True
             return False
         view.connect('decide-policy',policy)

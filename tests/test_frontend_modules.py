@@ -21,11 +21,11 @@ import runner_score
 class YouTubeBoundaryTests(unittest.TestCase):
     def request(self, action, data=None, origin='http://127.0.0.1:1234', path=None):
         handler = object.__new__(server.make_handler('synthetic-token'))
-        raw = json.dumps(data or {}).encode()
+        raw = json.dumps(data if data is not None else {}).encode()
         handler.path = path or '/synthetic-token/' + action
         handler.headers = {'Origin': origin, 'Content-Length': str(len(raw))}
         handler.rfile = io.BytesIO(raw)
-        handler.server = SimpleNamespace(server_port=1234, cache={})
+        handler.server = SimpleNamespace(server_port=1234, cache={}, ui_actions={})
         replies = []
         handler.reply = lambda *args: replies.append(args)
         handler.do_POST()
@@ -36,6 +36,28 @@ class YouTubeBoundaryTests(unittest.TestCase):
             self.assertEqual(self.request('search', {'query': 'test'}, origin='https://example.invalid')[0][0], 403)
             self.assertEqual(self.request('search', {'query': 'test'}, path='/wrong/search')[0][0], 403)
             search.assert_not_called()
+
+    def test_json_body_must_be_an_object_before_dispatch(self):
+        for data in (None, [], 'text', 4):
+            reply, _ = self.request('search', data)
+            self.assertEqual(reply[0], 400)
+
+    def test_native_ui_actions_are_size_and_origin_bounded(self):
+        called = []
+        handler = object.__new__(server.make_handler('synthetic-token'))
+        raw = json.dumps({'state': 'player'}).encode()
+        handler.path = '/synthetic-token/window-state'
+        handler.headers = {'Origin': 'http://127.0.0.1:1234', 'Content-Length': str(len(raw))}
+        handler.rfile = io.BytesIO(raw)
+        handler.server = SimpleNamespace(server_port=1234, cache={}, ui_actions={'window-state': called.append})
+        replies = []
+        handler.reply = lambda *args: replies.append(args)
+        handler.do_POST()
+        self.assertEqual(replies[-1], (200, {'ok': True}))
+        self.assertEqual(called, [{'state': 'player'}])
+        handler.headers['Content-Length'] = '4097'
+        handler.do_POST()
+        self.assertEqual(replies[-1][0], 400)
 
     def test_search_and_missing_key_contract(self):
         items = [{'id': 'abcdefghijk', 'title': 'Synthetic'}]
@@ -186,6 +208,10 @@ class YouTubeBoundaryTests(unittest.TestCase):
             api.LEGACY_CONFIG.parent.mkdir()
             api.LEGACY_CONFIG.write_text(json.dumps({'key': 'legacy_key_' + 'x' * 25}))
             self.assertEqual(api.read_key(), 'legacy_key_' + 'x' * 25)
+            api.CONFIG.parent.mkdir(parents=True)
+            for malformed in ('[]', 'null', '"not-an-object"'):
+                api.CONFIG.write_text(malformed)
+                self.assertEqual(api.read_key(), 'legacy_key_' + 'x' * 25)
             with self.assertRaises(ValueError):
                 api.save_key('invalid')
             key = 'synthetic_key_' + 'x' * 25

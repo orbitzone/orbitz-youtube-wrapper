@@ -27,6 +27,7 @@ def make_handler(token):
                 length=int(self.headers.get('Content-Length','0'))
                 if not 0<length<=4096:raise ValueError('Requisição inválida.')
                 data=json.loads(self.rfile.read(length))
+                if not isinstance(data,dict):raise ValueError('Requisição inválida.')
                 if action=='runner-score':
                     best=save_best_score(data['score']) if 'score' in data else read_best_score()
                     self.reply(200,{'best':best})
@@ -36,6 +37,11 @@ def make_handler(token):
                     locale=data.get('locale')
                     if locale not in ('pt-BR','en-US'):raise ValueError('Idioma inválido.')
                     applied_locale=ui.set_locale(locale);self.reply(200,{'saved':True,'locale':applied_locale})
+                elif action in ('window-state','open-external','copy-link'):
+                    callback=getattr(self.server,'ui_actions',{}).get(action)
+                    if callback is None:raise ValueError('Ação indisponível.')
+                    callback(data)
+                    self.reply(200,{'ok':True})
                 elif action=='recommendations':
                     cache=self.server.cache.get(None)
                     if not cache or time.time()-cache[0]>900:

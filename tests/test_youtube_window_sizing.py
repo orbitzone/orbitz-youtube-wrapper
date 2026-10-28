@@ -14,12 +14,14 @@ spec.loader.exec_module(youtube_widget)
 
 
 class YouTubeWindowSizingTests(unittest.TestCase):
-    def test_native_bridge_requires_the_current_session_token(self):
-        payload = youtube_widget.bridge_payload
-        self.assertEqual(payload('session-token\nsettings', 'session-token'), 'settings')
-        for message in ('', 'settings', 'other-token\nsettings', '☃\nsettings',
-                        'x' * 4097, 'session-token', None):
-            self.assertIsNone(payload(message, 'session-token'))
+    def test_native_actions_are_dispatched_only_after_local_http_validation(self):
+        source = (YOUTUBE_DIR / 'youtube_server.py').read_text()
+        widget = (YOUTUBE_DIR / 'youtube-wrapper.py').read_text()
+        self.assertIn('0<length<=4096', source)
+        self.assertIn("self.headers.get('Origin')!=origin", source)
+        self.assertIn("if not isinstance(data,dict)", source)
+        self.assertIn("server.ui_actions={'window-state':set_window_state,'open-external':open_external,'copy-link':copy_youtube_link}", widget)
+        self.assertIn('completed.wait(5)', widget)
 
     def test_flatpak_manifest_exposes_only_the_required_audio_socket(self):
         manifest = json.loads((ROOT / 'packaging/io.orbitz.YouTubeDesktop.json').read_text())
@@ -91,9 +93,10 @@ class YouTubeWindowSizingTests(unittest.TestCase):
         self.assertIn('#screen{aspect-ratio:auto;height:clamp(220px,calc(100vh - 110px),2000px)', html)
         self.assertIn('#results button{align-items:center;min-height:80px}', html)
         self.assertIn("function windowLayoutState(){if(!$('config').hidden&&$('discovery').hidden&&$('screen').hidden)return 'settings';return $('discovery').hidden?($('screen').hidden?'idle':'player'):'panel'}", html)
-        self.assertIn("const bridgeToken=location.pathname.split('/')[1]||''", html)
-        self.assertIn("bridge.postMessage(bridgeToken+'\\n'+windowLayoutState())", html)
-        self.assertIn("$('query').addEventListener('input',()=>{++sequence;$('submit').disabled=false;});", html)
+        self.assertIn("api('window-state',{state:windowLayoutState()}).catch(()=>{})", html)
+        self.assertIn("$('query').addEventListener('input',()=>{++sequence;clearTimeout(tabSearchTimer);activeSearchController?.abort();", html)
+        self.assertIn('setTimeout(searchCurrentTab,180)', html)
+        self.assertNotIn('window.webkit', html)
 
     def test_youtube_iframe_fullscreen_is_enabled_in_webkit_and_handled_by_gtk(self):
         html = (YOUTUBE_DIR / 'index.html').read_text()
@@ -103,10 +106,11 @@ class YouTubeWindowSizingTests(unittest.TestCase):
         self.assertNotIn("view.connect('enter-fullscreen'", source)
         self.assertNotIn("view.connect('leave-fullscreen'", source)
         self.assertIn("# Do not connect enter/leave-fullscreen: WebKit's default handlers", source)
-        self.assertIn("content_manager.register_script_message_handler('orbitzOpenExternal')", source)
+        self.assertNotIn('register_script_message_handler', source)
+        self.assertIn("api('open-external',{uri:link.href}).catch(()=>{})", html)
         self.assertIn("decision.ignore();return True", source)
 
-    def test_copy_link_bridge_accepts_only_youtube_video_urls(self):
+    def test_copy_link_action_accepts_only_youtube_video_urls(self):
         html = (YOUTUBE_DIR / 'index.html').read_text()
         source = (YOUTUBE_DIR / 'youtube-wrapper.py').read_text()
         self.assertIn('id="copy-video-link" type="button" hidden', html)
@@ -114,9 +118,9 @@ class YouTubeWindowSizingTests(unittest.TestCase):
         self.assertNotIn('download-video', html)
         self.assertIn("onStateChange:event=>{$('copy-video-link').hidden=event.data!==1", html)
         self.assertIn("$('copy-video-link').hidden=true", html)
-        self.assertIn("content_manager.register_script_message_handler('orbitzCopyLink')", source)
+        self.assertIn("api('copy-link',{uri:url})", html)
         self.assertIn("re.fullmatch(r'https://www\\.youtube\\.com/watch\\?v=[A-Za-z0-9_-]{11}',uri)", source)
-        self.assertIn('clipboard.set_text(uri,-1)', source)
+        self.assertIn('clipboard.set_text(value,-1)', source)
 
     def test_idle_runner_is_local_accessible_and_stops_when_playback_starts(self):
         html = (YOUTUBE_DIR / 'index.html').read_text()

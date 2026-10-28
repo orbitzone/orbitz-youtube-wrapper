@@ -21,6 +21,8 @@ nodes.get('query').value = 'Brasilia';
 const requests = [];
 const context = vm.createContext({
   $, api: async (action, body) => { requests.push({ action, body }); return { items: [] }; },
+  AbortController: class { signal = {}; abort() {} },
+  setTimeout: callback => { callback(); return 1; }, clearTimeout() {},
   videoId: () => '', renderResults() {}, uiPrune() {}, uiText(node, key) { node.uiKey = key; }, uiErrorText() {},
   loadRecommendations() {}, play() {},
 });

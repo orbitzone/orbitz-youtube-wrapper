@@ -9,7 +9,6 @@
 <div id="config" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="config-title" tabindex="-1"><section class="modal-card"><div class="modal-head"><h2 id="config-title" data-i18n="youtube.settings_title"></h2><button id="config-close" type="button" aria-label="" data-i18n-aria-label="youtube.close_settings">×</button></div><div class="modal-body"><label for="language"><span data-i18n="youtube.language"></span></label><select id="language"><option value="pt-BR" data-i18n="youtube.language_pt_br">Português (Brasil)</option><option value="en-US" data-i18n="youtube.language_en_us">English (United States)</option></select><label for="key"><span data-i18n="youtube.api_key"></span></label><input id="key" type="password" autocomplete="off" placeholder="" data-i18n-placeholder="youtube.paste_key"><button id="save"><span data-i18n="youtube.save_key"></span></button><p id="config-status" role="status" hidden></p><p><span data-i18n="youtube.key_privacy"></span></p><a href="https://console.cloud.google.com/apis/credentials" target="_blank"><span data-i18n="youtube.create_key"></span></a></div></section></div>
 <footer><a id="external" href="https://www.youtube.com/" target="_blank" hidden><span data-i18n="youtube.external"></span></a><small class="hint"><span data-i18n="youtube.fullscreen_hint"></span></small></footer>
 <script>
-const bridgeToken=location.pathname.split('/')[1]||'';
 // Owned UI text is bound by ID; provider/user text is never looked up in catalogs.
 let uiLocale='pt-BR',uiCatalog={},uiReady=false;
 const uiBindings=new Map();
@@ -108,7 +107,7 @@ function ufoPose(ufo,age,width,height){const start=ufo.direction>0?-36:width+36,
 function beginJump(e){if(reduced||!$('config').hidden||!$('screen').hidden||['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)||document.activeElement?.isContentEditable||(document.activeElement!==document.body&&document.activeElement!==canvas))return;if(e.type==='keydown'){if(![' ','ArrowUp'].includes(e.key)||e.repeat)return;e.preventDefault()}if(g.over){g.over=false;g.newRecord=false;g.score=0;g.speed=250;g.elapsed=0;g.difficulty=0;g.obs=starterCacti();resetObstacleSchedule();g.bullets=[];g.explosions=[];g.ufos=[];g.ufoDirection=1;g.ufoLasers=[];g.ufoSpawnTimer=3;g.fireTimer=0;g.flash=0;g.y=floor();g.vy=0;g.started=true;g.jumpHeld=false;help.textContent='';ensure();return}if(g.y<floor()-1||g.jumpHeld)return;g.pressStarted=performance.now();g.jumpHeld=true;g.vy=-350;g.started=true;help.textContent='';ensure()}
 function finishJump(){if(!g.jumpHeld)return;g.jumpHeld=false;ensure()}
  window.addEventListener('resize',resize);window.addEventListener('blur',()=>finishJump());document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'){finishJump();cancelAnimationFrame(g.raf);g.raf=0}else ensure()});document.addEventListener('keydown',beginJump);document.addEventListener('keyup',e=>{if([' ','ArrowUp'].includes(e.key))finishJump()});canvas.addEventListener('pointerdown',beginJump);document.addEventListener('pointerup',()=>finishJump());document.addEventListener('pointercancel',()=>finishJump());window.orbitzRunnerLanguageChanged=()=>{help.textContent=uiTr(reduced?'youtube.runner_reduced':'youtube.runner_help');draw()};new ResizeObserver(resize).observe(panel);resize();window.orbitzRunnerLanguageChanged();api('runner-score',{}).then(data=>{if(validRunnerBest(data.best)){g.best=Math.max(g.best,data.best);draw()}}).catch(()=>{});ensure()})();
-async function api(action,body){const response=await fetch(location.pathname+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await response.json();if(!response.ok){const error=Error(data.error||uiTr('youtube.request_failed'));error.code=data.code;if(!data.error)error.uiKey='youtube.request_failed';throw error;}return data}
+async function api(action,body,signal){const response=await fetch(location.pathname+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal});const data=await response.json();if(!response.ok){const error=Error(data.error||uiTr('youtube.request_failed'));error.code=data.code;if(!data.error)error.uiKey='youtube.request_failed';throw error;}return data}
 function videoId(text){try{const u=new URL(text);if(!['youtube.com','www.youtube.com','m.youtube.com','youtu.be','www.youtube-nocookie.com'].includes(u.hostname))return '';const id=u.hostname==='youtu.be'?u.pathname.slice(1):u.searchParams.get('v')||u.pathname.match(/^\/(?:shorts|embed)\/([\w-]{11})/)?.[1];return /^[\w-]{11}$/.test(id||'')?id:''}catch{return ''}}
 let youtubePlayer=null, playerReady=false, apiPromise=null;
 let playbackTimer=null, playbackRequest=0, pendingPlayback=false;
@@ -175,8 +174,10 @@ async function play(id,title){
  }catch(error){if(selected===id)uiErrorText($('status'),error)}
 }
 
-let activeTab='videos',commentsSequence=0,commentsPage='',commentsVideo='';
+let activeTab='videos',commentsSequence=0,commentsPage='',commentsVideo='',activeSearchController=null,tabSearchTimer=0;
 function setTab(tab){
+ ++sequence;clearTimeout(tabSearchTimer);activeSearchController?.abort();activeSearchController=null;
+ $('submit').disabled=false;
  activeTab=tab;
  const resultsTab=tab!=='comments';
  $('results').hidden=!resultsTab;$('comments').hidden=resultsTab;$('status').hidden=!resultsTab;
@@ -184,20 +185,22 @@ function setTab(tab){
  for(const name of ['videos','shorts','live','podcasts','comments']){const button=$(name+'-tab');button.setAttribute('aria-selected',String(name===tab));button.tabIndex=name===tab?0:-1;}
  if(tab==='comments'){loadComments();return;}
  ++commentsSequence;
- searchCurrentTab();
+ if($('query').value.trim())tabSearchTimer=setTimeout(searchCurrentTab,180);else searchCurrentTab();
 }
 async function searchCurrentTab(){
+ clearTimeout(tabSearchTimer);
  const query=$('query').value.trim();
+ activeSearchController?.abort();activeSearchController=null;
  if(!query){
   if(activeTab==='videos'){loadRecommendations();return;}
   $('results').replaceChildren();uiPrune();uiText($('status'),activeTab==='live'?'youtube.live_search_hint':activeTab==='podcasts'?'youtube.podcasts_search_hint':'youtube.shorts_search_hint');return;
  }
- const id=videoId(query),seq=++sequence;
+ const id=videoId(query),seq=++sequence,controller=new AbortController();activeSearchController=controller;
  if(id){play(id);return;}
  $('submit').disabled=true;uiText($('status'),'youtube.searching');$('results').replaceChildren();uiPrune();
- try{const mode=activeTab==='shorts'?'shorts':activeTab==='live'?'live':activeTab==='podcasts'?'podcasts':'videos';const data=await api('search',{query,mode});if(seq!==sequence||activeTab==='comments')return;renderResults(data.items);uiText($('status'),data.items.length?'youtube.select_result':'youtube.no_results')}
+ try{const mode=activeTab==='shorts'?'shorts':activeTab==='live'?'live':activeTab==='podcasts'?'podcasts':'videos';const data=await api('search',{query,mode},controller.signal);if(seq!==sequence||activeTab==='comments')return;renderResults(data.items);uiText($('status'),data.items.length?'youtube.select_result':'youtube.no_results')}
  catch(error){if(seq!==sequence||activeTab==='comments')return;uiErrorText($('status'),error);if(error.code==='key_required')openSettings()}
- finally{if(seq===sequence)$('submit').disabled=false}
+ finally{if(seq===sequence){$('submit').disabled=false;activeSearchController=null}}
 }
 async function loadComments(more=false){
  const seq=++commentsSequence,id=selected;
@@ -235,16 +238,15 @@ $('view-tabs').onkeydown=event=>{if(['ArrowUp','ArrowDown','Home','End'].include
 
 $('settings').onclick=()=>openSettings();
 function selectedVideoUrl(){return selected?'https://www.youtube.com/watch?v='+encodeURIComponent(selected):''}
-$('copy-video-link').onclick=async()=>{const url=selectedVideoUrl();if(!url)return;const bridge=window.webkit?.messageHandlers?.orbitzCopyLink;if(bridge){bridge.postMessage(bridgeToken+'\n'+url);uiText($('player-action-status'),'youtube.link_copied');return}try{await navigator.clipboard.writeText(url);uiText($('player-action-status'),'youtube.link_copied')}catch{uiText($('player-action-status'),'youtube.copy_link_failed')}};
+$('copy-video-link').onclick=async()=>{const url=selectedVideoUrl();if(!url)return;try{await api('copy-link',{uri:url});uiText($('player-action-status'),'youtube.link_copied')}catch{uiText($('player-action-status'),'youtube.copy_link_failed')}};
 document.addEventListener('click',event=>{
  const link=event.target.closest?.('a[target="_blank"]');if(!link)return;
  event.preventDefault();
- const bridge=window.webkit?.messageHandlers?.orbitzOpenExternal;
- if(bridge)bridge.postMessage(bridgeToken+'\n'+link.href);
+ api('open-external',{uri:link.href}).catch(()=>{});
 });
 let settingsReturnFocus=null;
 function windowLayoutState(){if(!$('config').hidden&&$('discovery').hidden&&$('screen').hidden)return 'settings';return $('discovery').hidden?($('screen').hidden?'idle':'player'):'panel'}
-function notifyWindowState(){const bridge=window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.orbitzWindow;if(bridge)bridge.postMessage(bridgeToken+'\n'+windowLayoutState())}
+function notifyWindowState(){api('window-state',{state:windowLayoutState()}).catch(()=>{})}
 function openSettings(){if(!$('config').hidden)return;settingsReturnFocus=document.activeElement;$('config').hidden=false;$('config-status').hidden=true;$('language').value=uiLocale;$('key').focus();notifyWindowState()}
 function closeSettings(){if($('config').hidden)return;$('config').hidden=true;const target=settingsReturnFocus?.isConnected?settingsReturnFocus:$('settings');settingsReturnFocus=null;target.focus();notifyWindowState()}
 function openDiscovery(){$('discovery').hidden=false;$('query').setAttribute('aria-expanded','true');notifyWindowState()}
@@ -256,7 +258,7 @@ $('language').onchange=async()=>{try{await api('language',{locale:$('language').
 $('config').onclick=event=>{if(event.target===$('config'))closeSettings()};
 $('save').onclick=async()=>{ $('config-status').hidden=true;try{await api('key',{key:$('key').value});$('key').value='';closeSettings();openDiscovery();if(!$('query').value.trim())await loadRecommendations();else uiText($('status'),'youtube.key_saved')}catch(e){$('config-status').hidden=false;uiErrorText($('config-status'),e)}};
 $('search').onsubmit=event=>{event.preventDefault();openDiscovery();if(activeTab==='comments')setTab('videos');else searchCurrentTab();};
-document.addEventListener('pointerdown',event=>{if(!$('discovery').hidden&&!$('discovery').contains(event.target)&&!$('search').contains(event.target)&&!$('config').contains(event.target)&&event.target!==$('settings'))closeDiscovery()});
+ document.addEventListener('pointerdown',event=>{if(!$('discovery').hidden&&!$('discovery').contains(event.target)&&!$('search').contains(event.target)&&!$('config').contains(event.target)&&event.target!==$('settings'))closeDiscovery()});
 document.addEventListener('focusin',event=>{if(!$('discovery').hidden&&!$('discovery').contains(event.target)&&!$('search').contains(event.target)&&!$('config').contains(event.target)&&event.target!==$('settings'))closeDiscovery()});
 document.addEventListener('keydown',event=>{
  if(event.key==='Escape'){
@@ -278,11 +280,11 @@ function renderResults(items){$('results').replaceChildren();uiPrune();const dat
 async function loadRecommendations(){
  const seq=++sequence;
  uiText($('status'),'youtube.loading_recommendations');
- try{const data=await api('recommendations',{});if(seq!==sequence)return;
+ try{const data=await api('recommendations',{});if(seq!==sequence||activeTab!=='videos'||$('query').value.trim())return;
   renderResults(data.items);uiText($('status'),data.items.length?'youtube.recommendations':'youtube.no_recommendations');
- }catch(e){if(seq!==sequence)return;uiErrorText($('status'),e);if(e.code==='key_required')openSettings();}
+ }catch(e){if(seq!==sequence||activeTab!=='videos'||$('query').value.trim())return;uiErrorText($('status'),e);if(e.code==='key_required')openSettings();}
 }
-$('query').addEventListener('input',()=>{++sequence;$('submit').disabled=false;});
+$('query').addEventListener('input',()=>{++sequence;clearTimeout(tabSearchTimer);activeSearchController?.abort();activeSearchController=null;$('submit').disabled=false;});
 youtubeAPI().catch(()=>{});
 notifyWindowState();
 

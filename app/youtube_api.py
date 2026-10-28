@@ -21,19 +21,28 @@ class MissingAPIKey(ValueError):
     pass
 
 
+def _valid_key(key):
+    return isinstance(key, str) and re.fullmatch(r'[A-Za-z0-9_-]{20,200}', key) is not None
+
+
 def read_key():
     for path in (CONFIG,LEGACY_CONFIG):
         try:
             fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW)
             with os.fdopen(fd) as stream:
-                return json.loads(stream.read(4096)).get('key','')
-        except (OSError,ValueError):
+                value=json.loads(stream.read(4096))
+            if not isinstance(value,dict):
+                continue
+            key=value.get('key','')
+            if _valid_key(key):
+                return key
+        except (OSError,ValueError,TypeError):
             continue
     return ''
 
 
 def save_key(key):
-    if not isinstance(key,str) or not re.fullmatch(r'[A-Za-z0-9_-]{20,200}',key):
+    if not _valid_key(key):
         raise ValueError('Formato da chave inválido.')
     CONFIG.parent.mkdir(parents=True,exist_ok=True)
     fd=os.open(CONFIG,os.O_WRONLY|os.O_CREAT|os.O_TRUNC|os.O_NOFOLLOW,0o600)

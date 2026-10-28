@@ -28,6 +28,7 @@ O ícone também aparece no menu. Para fechar, feche a janela. Não há início 
 - URLs diretas do YouTube podem ser coladas na busca sem chave. O filtro Shorts usa vídeos de menos de quatro minutos como aproximação; não garante a classificação Shorts. O filtro Live procura transmissões ativas. Podcasts acrescenta “podcast” ao termo buscado; a API não oferece classificação categórica e os resultados podem incluir outros vídeos.
 - Preferências e cache ficam dentro do diretório Flatpak do app. Nenhuma chave/configuração do Orbitz Widgets é importada automaticamente.
 - Em Configurações, escolha Português (Brasil) ou English (United States); a preferência fica salva neste app.
+- Na tela inicial, o mini game Orbitz Runner inclui OVNIs que cruzam a tela em trajetórias suaves, giram e disparam contra o cacto mais próximo. Cada OVNI leva três segundos para entrar, dispara após mais três segundos e leva outros três para sair; novas naves chegam a cada três segundos.
 
 ## Compatibilidade e privacidade
 

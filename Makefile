@@ -15,4 +15,4 @@ install:
 	glib-compile-schemas "$(DESTDIR)$(PREFIX)/share/glib-2.0/schemas"
 test:
 	GSETTINGS_BACKEND=memory python3 -m unittest discover -s tests -v
-	@for test in tests/test_youtube_*.js; do node "$$test"; done
+	@set -e; for test in tests/test_youtube_*.js; do node "$$test"; done

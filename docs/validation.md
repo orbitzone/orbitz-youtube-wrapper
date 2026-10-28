@@ -13,3 +13,7 @@ Escopo: Linux x86_64/Flatpak/X11 ou XWayland; sem Windows/macOS, Flathub, import
 ## Renomeação do projeto (28/10/2026)
 
 O repositório foi renomeado para `orbitzone/orbitz-youtube-wrapper` e a cópia local para `orbitz-youtube-wrapper`. O commit `6787a73` renomeia comando/entry point e atualiza as referências de build; preserva o ID Flatpak/GSettings `io.orbitz.YouTubeDesktop`. 21 testes Python, quatro scripts JavaScript, validadores desktop/AppStream/schema e instalação em stage passaram. O [CI 40642246818](https://github.com/orbitzone/orbitz-youtube-wrapper/actions/runs/40642246818) concluiu com sucesso e gerou `orbitz-youtube-wrapper-x86_64.flatpak` (SHA-256 `b39484a6fc57df8f652fa67a4a99712f2f726dd5aa04861e4cd53a532e0e8b9f`), instalado no escopo do usuário. A chave/cache continuam legíveis pelos caminhos legados; novas gravações usam o slug atual. O asset da release v0.1.0 conserva seu nome original.
+
+## Mini game (28/10/2026)
+
+O foco do canvas não desenha mais um contorno branco. OVNIs são criados a cada três segundos; cada nave acelera e desacelera ao entrar, gira e oscila durante a aproximação, dispara após três segundos de animação contra o cacto à frente mais próximo e sai da tela ao longo dos três segundos seguintes. As naves podem se sobrepor no tempo, pois o intervalo de chegada é menor que o ciclo completo de nove segundos. A validação local inclui 22 testes Python e cinco JavaScript via `make test`, incluindo os limites das fases e seleção de alvo. A validação gráfica em sessão real depende da instalação/build atualizado.

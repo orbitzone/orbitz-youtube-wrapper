@@ -172,6 +172,16 @@ class YouTubeWindowSizingTests(unittest.TestCase):
         self.assertIn("$('runner').hidden=true", html)
         self.assertIn('youtube.runner_help', html)
 
+    def test_runner_focus_has_no_white_outline_and_ufo_uses_three_second_phases(self):
+        html = (YOUTUBE_DIR / 'index.html').read_text()
+        self.assertNotIn('#runner-canvas:focus-visible', html)
+        self.assertIn('g.ufoSpawnTimer>=3', html)
+        self.assertIn('before<6&&u.age>=6', html)
+        self.assertIn('g.ufos=g.ufos.filter(u=>u.age<9)', html)
+        self.assertIn('nearestUfoCactus(g.obs,44+62)', html)
+        self.assertIn('g.ufoLasers.push({x1:pose.x,y1:pose.y+8,x2:tx,y2:ty,age:0})', html)
+        self.assertIn('ctx.rotate(p.rotation)', html)
+
     def test_widget_requests_centered_initial_placement(self):
         source = (YOUTUBE_DIR / 'youtube-wrapper.py').read_text()
         self.assertIn('window.set_position(Gtk.WindowPosition.CENTER)', source)

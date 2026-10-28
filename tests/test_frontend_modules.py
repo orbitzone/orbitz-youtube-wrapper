@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+import threading
+import time
 from types import SimpleNamespace
 import unittest
 import urllib.parse
@@ -93,11 +95,47 @@ class YouTubeBoundaryTests(unittest.TestCase):
             api.search('test', 'short')
 
     def test_language_setting_accepts_only_supported_locales(self):
-        with patch.object(server.ui, 'set_locale') as set_locale, patch.object(server.ui, 'get_locale', return_value='en-US'):
+        with patch.object(server.ui, 'set_locale', return_value='en-US') as set_locale:
             reply, _ = self.request('language', {'locale': 'en-US'})
             self.assertEqual(reply, (200, {'saved': True, 'locale': 'en-US'}))
             set_locale.assert_called_once_with('en-US')
             self.assertEqual(self.request('language', {'locale': 'fr-FR'})[0][0], 400)
+
+    def test_language_change_waits_for_main_thread_settings_write(self):
+        ui = server.ui
+        previous_settings = ui._settings
+        previous_locale = ui.get_locale()
+        callbacks = []
+        settings = SimpleNamespace(value='pt-BR')
+        def save_string(key, value):
+            self.assertEqual(key, 'ui-language')
+            settings.value = value
+            ui.refresh(value)
+        settings.set_string = save_string
+        fake_glib = SimpleNamespace(idle_add=lambda callback: callbacks.append(callback) or 17,
+                                    source_remove=lambda source: None)
+        fake_repository = SimpleNamespace(GLib=fake_glib)
+        fake_gi = SimpleNamespace(repository=fake_repository)
+        with patch.dict(sys.modules, {'gi': fake_gi, 'gi.repository': fake_repository}):
+            ui._settings = settings
+            result = []
+            worker = threading.Thread(target=lambda: result.append(self.request('language', {'locale': 'en-US'})[0]))
+            try:
+                worker.start()
+                deadline = time.monotonic() + 2
+                while not callbacks and time.monotonic() < deadline:
+                    time.sleep(0.001)
+                self.assertTrue(callbacks, 'worker did not schedule the GTK main-thread update')
+                callbacks.pop(0)()
+                worker.join(2)
+                self.assertFalse(worker.is_alive(), 'language request did not finish after the main-thread update')
+                self.assertEqual(result, [(200, {'saved': True, 'locale': 'en-US'})])
+                self.assertEqual(settings.value, 'en-US')
+            finally:
+                if worker.is_alive():
+                    worker.join(2)
+                ui._settings = previous_settings
+                ui.refresh(previous_locale)
 
     def test_invalid_requests_and_comment_cache(self):
         self.assertEqual(self.request('search', {'query': ''})[0][0], 400)

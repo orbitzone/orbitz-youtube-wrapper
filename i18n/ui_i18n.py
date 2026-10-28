@@ -100,15 +100,31 @@ def get_locale():return _locale
 def set_locale(value):
     locale=normalize(value)
     if threading.current_thread() is not threading.main_thread():
-        try:
-            from gi.repository import GLib
-            GLib.idle_add(set_locale,locale)
-            return True
-        except ImportError:pass
+        from gi.repository import GLib
+        completed=threading.Event()
+        outcome={}
+        def apply_locale():
+            try:
+                set_locale(locale)
+            except Exception as error:
+                outcome['error']=error
+            finally:
+                completed.set()
+            return False
+        source=GLib.idle_add(apply_locale)
+        if not completed.wait(5):
+            GLib.source_remove(source)
+            raise RuntimeError('Não foi possível aplicar a preferência de idioma.')
+        if 'error' in outcome:
+            raise outcome['error']
+        return _locale
     if _settings is not None:
         _settings.set_string('ui-language',locale)
+        if _locale != locale:
+            refresh(locale)
     else:
         refresh(locale)
+    return _locale
 
 
 def configure():

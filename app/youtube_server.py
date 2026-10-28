@@ -31,7 +31,7 @@ def make_handler(token):
                 elif action=='language':
                     locale=data.get('locale')
                     if locale not in ('pt-BR','en-US'):raise ValueError('Idioma inválido.')
-                    ui.set_locale(locale);self.reply(200,{'saved':True,'locale':ui.get_locale()})
+                    applied_locale=ui.set_locale(locale);self.reply(200,{'saved':True,'locale':applied_locale})
                 elif action=='recommendations':
                     cache=self.server.cache.get(None)
                     if not cache or time.time()-cache[0]>900:
@@ -68,7 +68,7 @@ def make_handler(token):
                         self.server.cache[identity]=cache
                     self.reply(200,{'items':cache[1]})
                 else:self.reply(404,{})
-            except (ValueError,TypeError,OSError):
+            except (ValueError,TypeError,OSError,RuntimeError):
                 import sys
                 error=sys.exc_info()[1]
                 self.reply(400,{'error':str(error)[:250],'code':'key_required' if isinstance(error,MissingAPIKey) else 'request_failed'})

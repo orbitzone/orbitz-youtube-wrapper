@@ -7,7 +7,7 @@
 <div id="screen" hidden><span data-i18n="youtube.choose_video"></span></div>
 <div id="discovery" hidden><p id="status" role="status"><span data-i18n="youtube.api_hint"></span></p><div id="content"><div id="results" role="tabpanel" aria-labelledby="videos-tab"></div><section id="comments" role="tabpanel" aria-labelledby="comments-tab" hidden><p id="comments-status" role="status"><span data-i18n="youtube.select_comments"></span></p><div id="comments-list"></div><button id="comments-more" hidden><span data-i18n="youtube.more_comments"></span></button></section><nav id="view-tabs" role="tablist" aria-label="" data-i18n-aria-label="youtube.content" aria-orientation="vertical"><button id="videos-tab" role="tab" aria-selected="true" aria-controls="results"><span data-i18n="youtube.videos"></span></button><button id="shorts-tab" role="tab" aria-selected="false" aria-controls="results" aria-describedby="shorts-hint" tabindex="-1"><span data-i18n="youtube.shorts"></span></button><button id="live-tab" role="tab" aria-selected="false" aria-controls="results" tabindex="-1"><span data-i18n="youtube.live"></span></button><button id="podcasts-tab" role="tab" aria-selected="false" aria-controls="results" aria-describedby="podcasts-hint" tabindex="-1"><span data-i18n="youtube.podcasts"></span></button><button id="comments-tab" role="tab" aria-selected="false" aria-controls="comments" tabindex="-1"><span data-i18n="youtube.comments"></span></button><span id="shorts-hint" class="sr-only" data-i18n="youtube.shorts_hint"></span><span id="podcasts-hint" class="sr-only" data-i18n="youtube.podcasts_hint"></span></nav></div></div>
 <div id="config" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="config-title" tabindex="-1"><section class="modal-card"><div class="modal-head"><h2 id="config-title" data-i18n="youtube.settings_title"></h2><button id="config-close" type="button" aria-label="" data-i18n-aria-label="youtube.close_settings">×</button></div><div class="modal-body"><label for="language"><span data-i18n="youtube.language"></span></label><select id="language"><option value="pt-BR" data-i18n="youtube.language_pt_br">Português (Brasil)</option><option value="en-US" data-i18n="youtube.language_en_us">English (United States)</option></select><label for="key"><span data-i18n="youtube.api_key"></span></label><input id="key" type="password" autocomplete="off" placeholder="" data-i18n-placeholder="youtube.paste_key"><button id="save"><span data-i18n="youtube.save_key"></span></button><p id="config-status" role="status" hidden></p><p><span data-i18n="youtube.key_privacy"></span></p><a href="https://console.cloud.google.com/apis/credentials" target="_blank"><span data-i18n="youtube.create_key"></span></a></div></section></div>
-<footer><a id="external" href="https://www.youtube.com/" target="_blank"><span data-i18n="youtube.external"></span></a><small class="hint"><span data-i18n="youtube.fullscreen_hint"></span></small></footer>
+<footer><a id="external" href="https://www.youtube.com/" target="_blank" hidden><span data-i18n="youtube.external"></span></a><small class="hint"><span data-i18n="youtube.fullscreen_hint"></span></small></footer>
 <script>
 const bridgeToken=location.pathname.split('/')[1]||'';
 // Owned UI text is bound by ID; provider/user text is never looked up in catalogs.
@@ -37,6 +37,7 @@ function obstacleTop(obstacle,floorY){return obstacle.type==='mosquito'?floorY-o
 function runnerHitsObstacle(obstacle,playerY,floorY){const top=obstacleTop(obstacle,floorY),bottom=obstacle.type==='mosquito'?top+obstacle.h:floorY;return obstacle.x<88&&obstacle.x+obstacle.w>45&&playerY>top+8&&playerY-73<bottom}
 function nearestUfoCactus(obstacles,characterRight){return obstacles.filter(o=>o.type==='cactus'&&o.x+o.w>characterRight).reduce((nearest,o)=>!nearest||Math.max(0,o.x-characterRight)<Math.max(0,nearest.x-characterRight)?o:nearest,null)}
 function validRunnerBest(score){return Number.isSafeInteger(score)&&score>=0&&score<=2147483647}
+function shouldShowExternalVideoLink(selectedId,screenHidden,runnerHidden,playerState,playerId){return Boolean(selectedId)&&!screenHidden&&runnerHidden&&(playerState===1||playerState===2)&&playerId===selectedId}
 function isNewRunnerBest(score,best){return validRunnerBest(score)&&score>best}
 function ufoReadyToSpawn(timeRemaining,activeCount){return timeRemaining<=0&&activeCount===0}
 function ufoPose(ufo,age,width,height){const start=ufo.direction>0?-36:width+36,end=ufo.direction>0?width+36:-36,anchor=width*(ufo.direction>0?.62:.38),phase=ufoPhase(age),p=phase==='enter'?ufoEase(age):phase==='exit'?ufoEase(age-2):0,sway=phase==='hover'?Math.sin((age-1)*5+ufo.phase)*Math.min(8,width*.015):0;let x=phase==='enter'?start+(anchor-start)*p:phase==='exit'?anchor+(end-anchor)*p:phase==='done'?end:anchor+sway;return{x:x+Math.sin(age*9+ufo.phase)*2,y:height*.23+Math.sin(age*5+ufo.phase)*Math.max(4,height*.035),tilt:Math.sin(age*5+ufo.phase)*.045}}
@@ -112,6 +113,7 @@ function videoId(text){try{const u=new URL(text);if(!['youtube.com','www.youtube
 let youtubePlayer=null, playerReady=false, apiPromise=null;
 let playbackTimer=null, playbackRequest=0, pendingPlayback=false;
 function stopPlaybackRetry(){clearTimeout(playbackTimer);playbackTimer=null;pendingPlayback=false;}
+function syncExternalVideoLink(state){const playerId=youtubePlayer?.getVideoData?.().video_id||'';$('external').hidden=!shouldShowExternalVideoLink(selected,$('screen').hidden,$('runner').hidden,state,playerId)}
 function startSelectedVideo(){
  const request=++playbackRequest;
  stopPlaybackRetry();pendingPlayback=true;
@@ -145,7 +147,7 @@ async function play(id,title){
  $('screen').hidden=false;
  notifyWindowState();
  selected=id;
- $('copy-video-link').hidden=true;
+ $('copy-video-link').hidden=true;$('external').hidden=true;
  if(activeTab==='comments')loadComments();
  ++playbackRequest;stopPlaybackRetry();
  $('external').href='https://www.youtube.com/watch?v='+encodeURIComponent(id);
@@ -166,9 +168,9 @@ async function play(id,title){
   $('screen').append(frame);
   youtubePlayer=new YT.Player(frame,{events:{
    onReady:event=>{youtubePlayer=event.target;playerReady=true;startSelectedVideo()},
-   onStateChange:event=>{$('copy-video-link').hidden=event.data!==1;if(event.data===1)stopPlaybackRetry()},
-   onAutoplayBlocked:()=>{stopPlaybackRetry();$('copy-video-link').hidden=true;uiText($('status'),'youtube.autoplay_blocked')},
-   onError:()=>{stopPlaybackRetry();$('copy-video-link').hidden=true;uiText($('status'),'youtube.video_unavailable')}
+   onStateChange:event=>{$('copy-video-link').hidden=event.data!==1;syncExternalVideoLink(event.data);if(event.data===1)stopPlaybackRetry()},
+   onAutoplayBlocked:()=>{stopPlaybackRetry();$('copy-video-link').hidden=true;$('external').hidden=true;uiText($('status'),'youtube.autoplay_blocked')},
+   onError:()=>{stopPlaybackRetry();$('copy-video-link').hidden=true;$('external').hidden=true;uiText($('status'),'youtube.video_unavailable')}
   }});
  }catch(error){if(selected===id)uiErrorText($('status'),error)}
 }

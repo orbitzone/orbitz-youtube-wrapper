@@ -1,0 +1,23 @@
+const assert = require('assert');
+const fs = require('fs');
+const vm = require('vm');
+
+const html = fs.readFileSync('app/index.html', 'utf8');
+const start = html.indexOf('function shouldShowExternalVideoLink(');
+const end = html.indexOf('\nfunction isNewRunnerBest(', start);
+assert(start >= 0 && end > start, 'external YouTube link visibility rule is available as a deterministic helper');
+const sandbox = {};
+vm.runInNewContext(`${html.slice(start, end)}\nglobalThis.shouldShowExternalVideoLink=shouldShowExternalVideoLink;`, sandbox);
+const show = (...state) => sandbox.shouldShowExternalVideoLink(...state);
+const selected = 'abcdefghijk';
+assert.equal(show(selected, false, true, 1, selected), true, 'the link appears while the selected video is playing');
+assert.equal(show(selected, false, true, 2, selected), true, 'the link appears while the selected video is paused');
+assert.equal(show('', false, true, 1, ''), false, 'the link stays hidden when no video is selected');
+assert.equal(show(selected, false, false, 1, selected), false, 'the link stays hidden while the mini game is visible');
+assert.equal(show(selected, true, true, 1, selected), false, 'the link stays hidden when the player screen is hidden');
+assert.equal(show(selected, false, true, 3, selected), false, 'the link stays hidden while the video is buffering');
+assert.equal(show(selected, false, true, 0, selected), false, 'the link stays hidden after playback ends');
+assert.equal(show(selected, false, true, 1, 'zyxwvutsrqp'), false, 'the link stays hidden until the selected video is active in the player');
+assert.match(html, /id="external"[^>]* hidden>/, 'the external link starts hidden');
+assert.match(html, /syncExternalVideoLink\(event\.data\)/, 'player state changes update link visibility');
+console.log('OK: YouTube external link appears only for the selected playing or paused video.');

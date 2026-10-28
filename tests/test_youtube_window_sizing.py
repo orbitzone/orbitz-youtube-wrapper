@@ -172,11 +172,13 @@ class YouTubeWindowSizingTests(unittest.TestCase):
         self.assertIn("$('runner').hidden=true", html)
         self.assertIn('youtube.runner_help', html)
 
-    def test_runner_focus_has_no_white_outline_and_ufo_uses_single_three_second_cycle(self):
+    def test_runner_focus_has_no_white_outline_and_ufo_waits_after_exit(self):
         html = (YOUTUBE_DIR / 'index.html').read_text()
         self.assertNotIn('#runner-canvas:focus-visible', html)
-        self.assertIn('function ufoReadyToSpawn(timer,activeCount){return timer>=3&&activeCount===0}', html)
-        self.assertIn('g.ufoSpawnTimer+=dt', html)
+        self.assertIn('function ufoReadyToSpawn(timeRemaining,activeCount){return timeRemaining<=0&&activeCount===0}', html)
+        self.assertIn('ufoSpawnTimer:3', html)
+        self.assertIn('ufoWasActive&&!g.ufos.length)g.ufoSpawnTimer=5', html)
+        self.assertIn('else if(!g.ufos.length)g.ufoSpawnTimer-=dt', html)
         self.assertIn('before<2&&u.age>=2', html)
         self.assertIn('g.ufos=g.ufos.filter(u=>u.age<3)', html)
         self.assertIn('ufoReadyToSpawn(g.ufoSpawnTimer,g.ufos.length)', html)

@@ -27,9 +27,10 @@ const target = sandbox.nearestUfoCactus([
 ], 64);
 assert.equal(target.x, 140, 'UFO targets the nearest cactus ahead of the character');
 assert.equal(sandbox.nearestUfoCactus([{ x: 1, w: 20 }], 64), null, 'cacti behind the character are ignored');
-assert.equal(sandbox.ufoReadyToSpawn(3, 0), true, 'a UFO enters after three seconds when none is active');
-assert.equal(sandbox.ufoReadyToSpawn(3, 1), false, 'an active UFO prevents overlapping spawns');
-assert.equal(sandbox.ufoReadyToSpawn(2.99, 0), false, 'the spawn timer keeps the three-second cadence');
+assert.equal(sandbox.ufoReadyToSpawn(0, 0), true, 'a UFO enters when its delay reaches zero');
+assert.equal(sandbox.ufoReadyToSpawn(5, 0), false, 'the five-second delay prevents an early spawn');
+assert.equal(sandbox.ufoReadyToSpawn(0, 1), false, 'an active UFO prevents overlapping spawns');
+assert.equal(sandbox.ufoReadyToSpawn(.01, 0), false, 'the timer waits for the full delay');
 
 const pose = sandbox.ufoPose({ direction: 1, phase: 0 }, 1, 500, 300);
 assert(Math.abs(pose.x - 310) < 3, 'UFO reaches its hover point after the one-second entrance');
@@ -40,4 +41,4 @@ assert(sandbox.ufoPose({ direction: -1, phase: 0 }, 3, 500, 300).x < 0, 'alterna
 assert(Math.abs(pose.tilt) <= .045, 'UFO keeps upright with only a slight tilt');
 assert.notEqual(pose.tilt, sandbox.ufoPose({ direction: 1, phase: 0 }, 1.2, 500, 300).tilt, 'UFO gently rocks around its own axis');
 
-console.log('OK: a single UFO arrives every three seconds, completes one-second phases, stays upright, targets the nearest cactus and uses cached drawing.');
+console.log('OK: one UFO completes one-second phases, waits five seconds after exit, stays upright, targets the nearest cactus and uses cached drawing.');

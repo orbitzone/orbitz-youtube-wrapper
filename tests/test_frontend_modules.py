@@ -161,8 +161,11 @@ class YouTubeBoundaryTests(unittest.TestCase):
         self.assertIn(b'<title>YouTube Wrapper - By Orbitz</title>', replies[-1][1])
 
     def test_local_key_permissions_and_validation(self):
-        with tempfile.TemporaryDirectory() as folder, patch.object(api, 'CONFIG', Path(folder) / 'youtube.json'):
+        with tempfile.TemporaryDirectory() as folder, patch.object(api, 'CONFIG', Path(folder) / 'new' / 'youtube.json'), patch.object(api, 'LEGACY_CONFIG', Path(folder) / 'old' / 'youtube.json'):
             self.assertEqual(api.read_key(), '')
+            api.LEGACY_CONFIG.parent.mkdir()
+            api.LEGACY_CONFIG.write_text(json.dumps({'key': 'legacy_key_' + 'x' * 25}))
+            self.assertEqual(api.read_key(), 'legacy_key_' + 'x' * 25)
             with self.assertRaises(ValueError):
                 api.save_key('invalid')
             key = 'synthetic_key_' + 'x' * 25
@@ -170,6 +173,7 @@ class YouTubeBoundaryTests(unittest.TestCase):
             self.assertEqual(api.read_key(), key)
             self.assertEqual(api.CONFIG.stat().st_mode & 0o777, 0o600)
             api.CONFIG.unlink()
+            api.LEGACY_CONFIG.unlink()
             target = Path(folder) / 'target'
             target.write_text(json.dumps({'key': key}))
             api.CONFIG.symlink_to(target)

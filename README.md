@@ -11,7 +11,7 @@ Busca e reprodução são partes separadas: a [YouTube Data API retorna detalhes
 Pacote x86_64 para distribuições Linux com Flatpak e X11 ou sessão Wayland com XWayland. Requer conexão à internet para usar APIs/players do YouTube. Não depende de versão do GNOME Shell; runtime e arquitetura delimitam a compatibilidade. Não promete suporte a todas as distribuições.
 
 1. [Instale Flatpak para sua distribuição](https://flatpak.org/setup/).
-2. Baixe `orbitz-youtube-desktop-x86_64.flatpak` da [prévia v0.1.0](https://github.com/orbitzone/orbitz-youtube-desktop/releases/tag/v0.1.0). O arquivo `SHA256SUMS` no mesmo release permite conferir a integridade.
+2. Baixe `orbitz-youtube-desktop-x86_64.flatpak` da [prévia v0.1.0](https://github.com/orbitzone/orbitz-youtube-wrapper/releases/tag/v0.1.0). Esse bundle conserva o nome do arquivo publicado antes do rename; `SHA256SUMS` permite conferir a integridade.
 3. No diretório do download:
 
 ```sh
@@ -24,7 +24,7 @@ O ícone também aparece no menu. Para fechar, feche a janela. Não há início 
 
 ## Configurar e usar
 
-- Abra Configurações e informe uma chave pessoal da YouTube Data API v3 para busca/comentários. A chave fica em `~/.var/app/io.orbitz.YouTubeDesktop/config/orbitz-youtube-desktop/youtube.json` com permissão privada. Não compartilhe o pacote com credenciais. Consulte limites de quota do seu projeto no Google Cloud.
+- Abra Configurações e informe uma chave pessoal da YouTube Data API v3 para busca/comentários. A chave fica em `~/.var/app/io.orbitz.YouTubeDesktop/config/orbitz-youtube-wrapper/youtube.json` com permissão privada. Uma chave de instalações anteriores também é lida do diretório legado `orbitz-youtube-desktop`; novas gravações usam o nome atual. Não compartilhe o pacote com credenciais. Consulte limites de quota do seu projeto no Google Cloud.
 - URLs diretas do YouTube podem ser coladas na busca sem chave. O filtro Shorts usa vídeos de menos de quatro minutos como aproximação; não garante a classificação Shorts. O filtro Live procura transmissões ativas. Podcasts acrescenta “podcast” ao termo buscado; a API não oferece classificação categórica e os resultados podem incluir outros vídeos.
 - Preferências e cache ficam dentro do diretório Flatpak do app. Nenhuma chave/configuração do Orbitz Widgets é importada automaticamente.
 - Em Configurações, escolha Português (Brasil) ou English (United States); a preferência fica salva neste app.
@@ -41,7 +41,7 @@ Instale `flatpak-builder`, Flatpak, Node.js e o remoto Flathub. Na raiz:
 
 ```sh
 flatpak-builder --user --install-deps-from=flathub --assumeyes --repo=repo build-dir packaging/io.orbitz.YouTubeDesktop.json
-flatpak build-bundle repo orbitz-youtube-desktop-x86_64.flatpak io.orbitz.YouTubeDesktop --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak build-bundle repo orbitz-youtube-wrapper-x86_64.flatpak io.orbitz.YouTubeDesktop --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
 ```
 
-Desenvolvimento nativo: Python 3, GTK 3, WebKitGTK 4.1, PyGObject, SQLite e Node.js. Execute `python3 app/youtube-widget.py` numa sessão X11/XWayland. `make test` usa mocks/fixtures e testes de interface sem chamar APIs reais. Nunca coloque chave real em testes. Veja [origem e validação](docs/validation.md).
+Desenvolvimento nativo: Python 3, GTK 3, WebKitGTK 4.1, PyGObject, SQLite e Node.js. Execute `python3 app/youtube-wrapper.py` numa sessão X11/XWayland. `make test` usa mocks/fixtures e testes de interface sem chamar APIs reais. Nunca coloque chave real em testes. Veja [origem e validação](docs/validation.md).

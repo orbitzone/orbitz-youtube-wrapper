@@ -12,7 +12,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-CONFIG = Path(os.environ.get('XDG_CONFIG_HOME', Path.home()/'.config'))/'orbitz-youtube-desktop'/'youtube.json'
+CONFIG_ROOT = Path(os.environ.get('XDG_CONFIG_HOME', Path.home()/'.config'))
+CONFIG = CONFIG_ROOT/'orbitz-youtube-wrapper'/'youtube.json'
+LEGACY_CONFIG = CONFIG_ROOT/'orbitz-youtube-desktop'/'youtube.json'
 
 
 class MissingAPIKey(ValueError):
@@ -20,12 +22,14 @@ class MissingAPIKey(ValueError):
 
 
 def read_key():
-    try:
-        fd=os.open(CONFIG,os.O_RDONLY|os.O_NOFOLLOW)
-        with os.fdopen(fd) as stream:
-            return json.loads(stream.read(4096)).get('key','')
-    except (OSError,ValueError):
-        return ''
+    for path in (CONFIG,LEGACY_CONFIG):
+        try:
+            fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW)
+            with os.fdopen(fd) as stream:
+                return json.loads(stream.read(4096)).get('key','')
+        except (OSError,ValueError):
+            continue
+    return ''
 
 
 def save_key(key):
@@ -81,13 +85,16 @@ def search(query=None, mode='videos'):
 
 
 def recommendations():
-    cache_path=Path(os.environ.get('XDG_CACHE_HOME',Path.home()/'.cache'))/'orbitz-youtube-desktop'/'youtube-suggestions.json'
-    try:
-        cached=json.loads(cache_path.read_text())
-        if 0<=time.time()-cached['time']<21600 and isinstance(cached['items'],list) and cached['items']:
-            return cached['items']
-    except (OSError,ValueError,KeyError,TypeError):
-        pass
+    cache_root=Path(os.environ.get('XDG_CACHE_HOME',Path.home()/'.cache'))
+    cache_path=cache_root/'orbitz-youtube-wrapper'/'youtube-suggestions.json'
+    legacy_cache=cache_root/'orbitz-youtube-desktop'/'youtube-suggestions.json'
+    for source in (cache_path,legacy_cache):
+        try:
+            cached=json.loads(source.read_text())
+            if 0<=time.time()-cached['time']<21600 and isinstance(cached['items'],list) and cached['items']:
+                return cached['items']
+        except (OSError,ValueError,KeyError,TypeError):
+            continue
     items=search()
     try:
         cache_path.parent.mkdir(parents=True,exist_ok=True)

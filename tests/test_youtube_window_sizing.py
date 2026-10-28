@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 YOUTUBE_DIR = ROOT / 'app'
 sys.path.insert(0, str(YOUTUBE_DIR))
-spec = importlib.util.spec_from_file_location('orbitz_youtube_widget', YOUTUBE_DIR / 'youtube-widget.py')
+spec = importlib.util.spec_from_file_location('orbitz_youtube_wrapper', YOUTUBE_DIR / 'youtube-wrapper.py')
 youtube_widget = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(youtube_widget)
 
@@ -88,7 +88,7 @@ class YouTubeWindowSizingTests(unittest.TestCase):
 
     def test_youtube_iframe_fullscreen_is_enabled_in_webkit_and_handled_by_gtk(self):
         html = (YOUTUBE_DIR / 'index.html').read_text()
-        source = (YOUTUBE_DIR / 'youtube-widget.py').read_text()
+        source = (YOUTUBE_DIR / 'youtube-wrapper.py').read_text()
         self.assertIn("frame.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';frame.allowFullscreen=true", html)
         self.assertIn("settings.set_property('enable-fullscreen',True)", source)
         self.assertNotIn("view.connect('enter-fullscreen'", source)
@@ -99,7 +99,7 @@ class YouTubeWindowSizingTests(unittest.TestCase):
 
     def test_copy_link_bridge_accepts_only_youtube_video_urls(self):
         html = (YOUTUBE_DIR / 'index.html').read_text()
-        source = (YOUTUBE_DIR / 'youtube-widget.py').read_text()
+        source = (YOUTUBE_DIR / 'youtube-wrapper.py').read_text()
         self.assertIn('id="copy-video-link" type="button" hidden', html)
         self.assertIn('header>button[hidden]{display:none}', html)
         self.assertNotIn('download-video', html)
@@ -173,11 +173,11 @@ class YouTubeWindowSizingTests(unittest.TestCase):
         self.assertIn('youtube.runner_help', html)
 
     def test_widget_requests_centered_initial_placement(self):
-        source = (YOUTUBE_DIR / 'youtube-widget.py').read_text()
+        source = (YOUTUBE_DIR / 'youtube-wrapper.py').read_text()
         self.assertIn('window.set_position(Gtk.WindowPosition.CENTER)', source)
-        launcher = (ROOT / 'data' / 'orbitz-youtube-desktop').read_text()
+        launcher = (ROOT / 'data' / 'orbitz-youtube-wrapper').read_text()
         self.assertIn('GDK_BACKEND=x11', launcher)
-        self.assertIn('youtube-widget.py', launcher)
+        self.assertIn('youtube-wrapper.py', launcher)
 
 
 if __name__ == '__main__':

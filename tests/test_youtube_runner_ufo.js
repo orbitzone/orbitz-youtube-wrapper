@@ -7,7 +7,7 @@ const start = html.indexOf('function ufoPhase(');
 const end = html.indexOf('\n(()=>{', start);
 assert(start >= 0 && end > start, 'runner timing helpers must remain available as a deterministic block');
 const sandbox = {};
-vm.runInNewContext(`${html.slice(start, end)}\nglobalThis.ufoPhase=ufoPhase;globalThis.ufoEase=ufoEase;globalThis.nearestUfoCactus=nearestUfoCactus;globalThis.ufoReadyToSpawn=ufoReadyToSpawn;globalThis.ufoPose=ufoPose;`, sandbox);
+vm.runInNewContext(`${html.slice(start, end)}\nglobalThis.ufoPhase=ufoPhase;globalThis.ufoEase=ufoEase;globalThis.nearestUfoCactus=nearestUfoCactus;globalThis.ufoReadyToSpawn=ufoReadyToSpawn;globalThis.ufoPose=ufoPose;globalThis.validRunnerBest=validRunnerBest;`, sandbox);
 
 assert.equal(sandbox.ufoPhase(0), 'enter');
 assert.equal(sandbox.ufoPhase(.999), 'enter');
@@ -21,12 +21,14 @@ assert.equal(sandbox.ufoEase(.5), .5);
 assert.equal(sandbox.ufoEase(1), 1);
 
 const target = sandbox.nearestUfoCactus([
-  { x: 8, w: 18, h: 30 },
-  { x: 260, w: 20, h: 25 },
-  { x: 140, w: 16, h: 32 },
+  { type: 'cactus', x: 8, w: 18, h: 30 },
+  { type: 'rock', x: 80, w: 20, h: 15 },
+  { type: 'cactus', x: 260, w: 20, h: 25 },
+  { type: 'cactus', x: 140, w: 16, h: 32 },
 ], 64);
 assert.equal(target.x, 140, 'UFO targets the nearest cactus ahead of the character');
-assert.equal(sandbox.nearestUfoCactus([{ x: 1, w: 20 }], 64), null, 'cacti behind the character are ignored');
+assert.equal(sandbox.nearestUfoCactus([{ type: 'cactus', x: 1, w: 20 }], 64), null, 'cacti behind the character are ignored');
+assert.equal(sandbox.nearestUfoCactus([{ type: 'rock', x: 80, w: 20 }], 64), null, 'rocks are excluded from the UFO cactus target');
 assert.equal(sandbox.ufoReadyToSpawn(0, 0), true, 'a UFO enters when its delay reaches zero');
 assert.equal(sandbox.ufoReadyToSpawn(5, 0), false, 'the five-second delay prevents an early spawn');
 assert.equal(sandbox.ufoReadyToSpawn(0, 1), false, 'an active UFO prevents overlapping spawns');
@@ -40,5 +42,8 @@ assert(sandbox.ufoPose({ direction: 1, phase: 0 }, 3, 500, 300).x > 500, 'UFO ex
 assert(sandbox.ufoPose({ direction: -1, phase: 0 }, 3, 500, 300).x < 0, 'alternate UFO exits beyond the left edge');
 assert(Math.abs(pose.tilt) <= .045, 'UFO keeps upright with only a slight tilt');
 assert.notEqual(pose.tilt, sandbox.ufoPose({ direction: 1, phase: 0 }, 1.2, 500, 300).tilt, 'UFO gently rocks around its own axis');
+assert.equal(sandbox.validRunnerBest(1234), true, 'valid high scores can be saved');
+assert.equal(sandbox.validRunnerBest(-1), false, 'negative scores are rejected');
+assert.equal(sandbox.validRunnerBest(1.5), false, 'fractional scores are rejected');
 
 console.log('OK: one UFO completes one-second phases, waits five seconds after exit, stays upright, targets the nearest cactus and uses cached drawing.');

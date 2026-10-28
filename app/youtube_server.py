@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import time
 from youtube_api import MissingAPIKey,save_key,search,recommendations,comments
+from runner_score import read_best_score,save_best_score
 from ui_language import ui
 
 BASE = Path(__file__).resolve().parent
@@ -26,7 +27,10 @@ def make_handler(token):
                 length=int(self.headers.get('Content-Length','0'))
                 if not 0<length<=4096:raise ValueError('Requisição inválida.')
                 data=json.loads(self.rfile.read(length))
-                if action=='key':
+                if action=='runner-score':
+                    best=save_best_score(data['score']) if 'score' in data else read_best_score()
+                    self.reply(200,{'best':best})
+                elif action=='key':
                     save_key(data.get('key'));self.server.cache.clear();self.reply(200,{'saved':True})
                 elif action=='language':
                     locale=data.get('locale')

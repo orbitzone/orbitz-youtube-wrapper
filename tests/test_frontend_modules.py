@@ -15,6 +15,7 @@ YOUTUBE = Path(__file__).resolve().parents[1] / 'app'
 sys.path.insert(0, str(YOUTUBE))
 import youtube_api as api
 import youtube_server as server
+import runner_score
 
 
 class YouTubeBoundaryTests(unittest.TestCase):
@@ -146,6 +147,25 @@ class YouTubeBoundaryTests(unittest.TestCase):
             self.assertEqual(reply[0], 200)
             self.assertIn(('abcdefghijk', ''), handler.server.comment_cache)
             comments.assert_called_once_with('abcdefghijk', '')
+
+    def test_runner_score_endpoint_reads_and_saves_valid_record(self):
+        with patch.object(server, 'read_best_score', return_value=640), patch.object(server, 'save_best_score', return_value=900) as save:
+            self.assertEqual(self.request('runner-score')[0], (200, {'best': 640}))
+            self.assertEqual(self.request('runner-score', {'score': 900})[0], (200, {'best': 900}))
+            save.assert_called_once_with(900)
+        self.assertEqual(self.request('runner-score', {'score': -1})[0][0], 400)
+
+    def test_runner_best_score_persists_atomically_and_never_decreases(self):
+        with tempfile.TemporaryDirectory() as folder, patch.object(runner_score, 'SCORE_FILE', Path(folder) / 'config' / 'runner.json'):
+            self.assertEqual(runner_score.read_best_score(), 0)
+            self.assertEqual(runner_score.save_best_score(1376), 1376)
+            self.assertEqual(runner_score.read_best_score(), 1376)
+            self.assertEqual(runner_score.save_best_score(42), 1376)
+            self.assertEqual(runner_score.SCORE_FILE.stat().st_mode & 0o777, 0o600)
+            with self.assertRaises(ValueError):
+                runner_score.save_best_score(True)
+            with self.assertRaises(ValueError):
+                runner_score.save_best_score(2_147_483_648)
 
     def test_document_get_keeps_token_boundary(self):
         handler = object.__new__(server.make_handler('synthetic-token'))

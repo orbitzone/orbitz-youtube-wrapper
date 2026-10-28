@@ -136,7 +136,7 @@ class YouTubeWindowSizingTests(unittest.TestCase):
         self.assertIn("requestAnimationFrame(tick)", html)
         self.assertIn('background:transparent', html)
         self.assertIn("ctx.createLinearGradient(x+5,y-68,x+54,y-5)", html)
-        self.assertIn("ctx.fillStyle='#a8f08b'", html)
+        self.assertIn("ctx.fillStyle='#82c96c'", html)
         self.assertIn('Math.floor(g.score/2)%2', html)
         self.assertIn('Hand-drawn profile', html)
         self.assertIn('no projecting muzzle', html)
@@ -187,6 +187,11 @@ class YouTubeWindowSizingTests(unittest.TestCase):
         self.assertIn('ctx.rotate(p.tilt)', html)
         self.assertIn('ctx.drawImage(ufoSprite,-36,-18)', html)
         self.assertIn('now-g.last<1000/60', html)
+        self.assertIn("api('runner-score',{})", html)
+        self.assertIn("api('runner-score',{score:record})", html)
+        self.assertIn("const type=Math.random()<.32?'rock':'cactus'", html)
+        self.assertIn("ctx.fillStyle='#33432f'", html)
+        self.assertIn("if(o.type==='rock')", html)
 
     def test_widget_requests_centered_initial_placement(self):
         source = (YOUTUBE_DIR / 'youtube-wrapper.py').read_text()

@@ -11,7 +11,7 @@ Busca e reprodução são partes separadas: a [YouTube Data API retorna detalhes
 Pacote x86_64 para distribuições Linux com Flatpak e X11 ou sessão Wayland com XWayland. Requer conexão à internet para usar APIs/players do YouTube. Não depende de versão do GNOME Shell; runtime e arquitetura delimitam a compatibilidade. Não promete suporte a todas as distribuições.
 
 1. [Instale Flatpak para sua distribuição](https://flatpak.org/setup/).
-2. Baixe o `.flatpak` da prévia em [Releases](https://github.com/orbitzone/orbitz-youtube-desktop/releases). Até a publicação da primeira prévia, use o artefato verde em [Actions](https://github.com/orbitzone/orbitz-youtube-desktop/actions).
+2. Baixe `orbitz-youtube-desktop-x86_64.flatpak` da [prévia v0.1.0](https://github.com/orbitzone/orbitz-youtube-desktop/releases/tag/v0.1.0). O arquivo `SHA256SUMS` no mesmo release permite conferir a integridade.
 3. No diretório do download:
 
 ```sh

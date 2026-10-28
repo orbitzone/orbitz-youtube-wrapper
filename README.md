@@ -29,7 +29,7 @@ O ícone também aparece no menu. Para fechar, feche a janela. Não há início 
 - Preferências e cache ficam dentro do diretório Flatpak do app. Nenhuma chave/configuração do Orbitz Widgets é importada automaticamente.
 - Em Configurações, escolha Português (Brasil) ou English (United States); a preferência fica salva neste app.
 - Na tela inicial, o mini game Orbitz Runner inclui um OVNI por vez: entra no primeiro segundo, dispara no cacto mais próximo no segundo, sai no terceiro e aguarda cinco segundos antes da próxima nave. A inclinação suave mantém a nave na posição correta.
-- O recorde pessoal fica salvo no perfil local do app. O cenário usa um campo gramado e intercala cactos e pedras como obstáculos.
+- O recorde pessoal fica salvo no perfil local do app. O cenário usa um campo gramado com cactos e pedras no solo, além de pernilongos que cruzam o jogo em linha reta pelo ar.
 
 ## Compatibilidade e privacidade
 

@@ -172,7 +172,7 @@ class YouTubeWindowSizingTests(unittest.TestCase):
         self.assertIn("$('runner').hidden=true", html)
         self.assertIn('youtube.runner_help', html)
 
-    def test_runner_focus_has_no_white_outline_and_ufo_waits_after_exit(self):
+    def test_runner_focus_and_obstacle_types_preserve_game_rules(self):
         html = (YOUTUBE_DIR / 'index.html').read_text()
         self.assertNotIn('#runner-canvas:focus-visible', html)
         self.assertIn('function ufoReadyToSpawn(timeRemaining,activeCount){return timeRemaining<=0&&activeCount===0}', html)
@@ -189,9 +189,13 @@ class YouTubeWindowSizingTests(unittest.TestCase):
         self.assertIn('now-g.last<1000/60', html)
         self.assertIn("api('runner-score',{})", html)
         self.assertIn("api('runner-score',{score:record})", html)
-        self.assertIn("const type=Math.random()<.32?'rock':'cactus'", html)
+        self.assertIn("roll<.16?'mosquito':roll<.43?'rock':'cactus'", html)
         self.assertIn("ctx.fillStyle='#33432f'", html)
         self.assertIn("if(o.type==='rock')", html)
+        self.assertIn("roll<.16?'mosquito'", html)
+        self.assertIn("altitude:type==='mosquito'?35:0", html)
+        self.assertIn('function runnerHitsObstacle(obstacle,playerY,floorY)', html)
+        self.assertIn('o.x-=g.speed*dt', html)
 
     def test_widget_requests_centered_initial_placement(self):
         source = (YOUTUBE_DIR / 'youtube-wrapper.py').read_text()

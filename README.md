@@ -1,6 +1,6 @@
-# Orbitz YouTube Desktop
+# YouTube Wrapper - By Orbitz
 
-Um mini app independente para pesquisar vídeos, Shorts e transmissões ao vivo, consultar comentários e reproduzir vídeos do YouTube numa janela compacta. Busca e comentários usam uma chave própria da YouTube Data API v3, salva localmente; links de vídeo podem abrir diretamente sem chave. A aplicação usa o player incorporado oficial do YouTube para a reprodução.
+Um mini app independente para pesquisar vídeos, Shorts, transmissões ao vivo e podcasts, consultar comentários e reproduzir vídeos do YouTube numa janela compacta. Busca e comentários usam uma chave própria da YouTube Data API v3, salva localmente; links de vídeo podem abrir diretamente sem chave. A aplicação usa o player incorporado oficial do YouTube para a reprodução.
 
 Desenvolvido por **Felipe Santiago / orbitzone** e extraído do [Orbitz Widgets for GNOME](https://github.com/orbitzone/orbitz-widgets-for-gnome), sob GPL-3.0. É um projeto comunitário sem afiliação com Google ou YouTube.
 
@@ -25,9 +25,9 @@ O ícone também aparece no menu. Para fechar, feche a janela. Não há início 
 ## Configurar e usar
 
 - Abra Configurações e informe uma chave pessoal da YouTube Data API v3 para busca/comentários. A chave fica em `~/.var/app/io.orbitz.YouTubeDesktop/config/orbitz-youtube-desktop/youtube.json` com permissão privada. Não compartilhe o pacote com credenciais. Consulte limites de quota do seu projeto no Google Cloud.
-- URLs diretas do YouTube podem ser coladas na busca sem chave. O filtro Shorts usa vídeos de menos de quatro minutos como aproximação; não garante a classificação Shorts. O filtro Live procura transmissões ativas.
+- URLs diretas do YouTube podem ser coladas na busca sem chave. O filtro Shorts usa vídeos de menos de quatro minutos como aproximação; não garante a classificação Shorts. O filtro Live procura transmissões ativas. Podcasts acrescenta “podcast” ao termo buscado; a API não oferece classificação categórica e os resultados podem incluir outros vídeos.
 - Preferências e cache ficam dentro do diretório Flatpak do app. Nenhuma chave/configuração do Orbitz Widgets é importada automaticamente.
-- Para inglês nesta prévia: `flatpak run --env=ORBITZ_LOCALE=en-US io.orbitz.YouTubeDesktop`.
+- Em Configurações, escolha Português (Brasil) ou English (United States); a preferência fica salva neste app.
 
 ## Compatibilidade e privacidade
 

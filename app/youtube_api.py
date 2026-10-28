@@ -39,7 +39,7 @@ def save_key(key):
 
 
 def search(query=None, mode='videos'):
-    if not isinstance(mode,str) or mode not in ('videos','shorts','live'):
+    if not isinstance(mode,str) or mode not in ('videos','shorts','live','podcasts'):
         raise ValueError('Filtro de busca inválido.')
     if query is not None and (not isinstance(query,str) or not 0<len(query.strip())<=300 or any(ord(char)<32 for char in query)):
         raise ValueError('Busca inválida.')
@@ -50,7 +50,9 @@ def search(query=None, mode='videos'):
         options.update(regionCode='BR',relevanceLanguage='pt',order='viewCount',
             publishedAfter=(datetime.now(timezone.utc)-timedelta(days=7)).strftime('%Y-%m-%dT%H:%M:%SZ'))
     else:
-        options['q']=query
+        options['q']=('podcast ' if mode=='podcasts' else '')+query
+        # Podcasts are not an official search filter. Prefixing the user's
+        # query is an approximate relevance search, not a content guarantee.
         # The API's `short` bucket means videos under four minutes. It is the
         # closest official search filter; YouTube does not expose a Shorts-only
         # search parameter, so some returned videos may not be classified as Shorts.

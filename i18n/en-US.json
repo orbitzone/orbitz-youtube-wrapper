@@ -53,5 +53,11 @@
   "youtube.select_result": "Select a video in the results",
   "youtube.video_unavailable": "This video could not be played here. Use “Open on YouTube”.",
   "youtube.videos": "Videos",
-  "youtube.window_title": "YouTube · Orbitz"
+  "youtube.window_title": "YouTube Wrapper - By Orbitz",
+  "youtube.podcasts": "Podcasts",
+  "youtube.podcasts_hint": "Adds “podcast” to your search; results may include other videos.",
+  "youtube.podcasts_search_hint": "Enter a topic to search for podcast episodes. Results may include other videos.",
+  "youtube.language": "Interface language",
+  "youtube.language_pt_br": "Português (Brasil)",
+  "youtube.language_en_us": "English (United States)"
 }

@@ -23,9 +23,9 @@ const node = () => ({
   contains(target) { return this.children?.includes(target) || target === this; },
   querySelectorAll() { return focusables; },
 });
-const ids = ['settings', 'config', 'config-status', 'key', 'config-close', 'save', 'query', 'search', 'submit', 'discovery', 'screen', 'copy-video-link', 'player-action-status'];
+const ids = ['settings', 'config', 'config-status', 'language', 'key', 'config-close', 'save', 'query', 'search', 'submit', 'discovery', 'screen', 'copy-video-link', 'player-action-status'];
 const nodes = new Map(ids.map(id => [id, node()]));
-const focusables = ['config-close', 'key', 'save', 'credential-link'].map(() => node());
+const focusables = ['config-close', 'language', 'key', 'save', 'credential-link'].map(() => node());
 nodes.get('config').contains = target => focusables.includes(target) || target === nodes.get('config');
 nodes.get('config').querySelectorAll = () => focusables;
 nodes.get('search').contains = target => target === nodes.get('query') || target === nodes.get('submit') || target === nodes.get('search');
@@ -51,6 +51,7 @@ const context = vm.createContext({
   searchCurrentTab() {}, setTab() {},
   selected: 'abcdefghijk',
   bridgeToken: 'synthetic-token',
+  uiLocale: 'pt-BR',
 });
 const start = html.indexOf("$('settings').onclick=()=>openSettings();");
 const end = html.indexOf('function renderResults', start);

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import time
 from youtube_api import MissingAPIKey,save_key,search,recommendations,comments
+from ui_language import ui
 
 BASE = Path(__file__).resolve().parent
 
@@ -27,6 +28,10 @@ def make_handler(token):
                 data=json.loads(self.rfile.read(length))
                 if action=='key':
                     save_key(data.get('key'));self.server.cache.clear();self.reply(200,{'saved':True})
+                elif action=='language':
+                    locale=data.get('locale')
+                    if locale not in ('pt-BR','en-US'):raise ValueError('Idioma inválido.')
+                    ui.set_locale(locale);self.reply(200,{'saved':True,'locale':ui.get_locale()})
                 elif action=='recommendations':
                     cache=self.server.cache.get(None)
                     if not cache or time.time()-cache[0]>900:
@@ -48,7 +53,7 @@ def make_handler(token):
                     query=data.get('query')
                     mode=data.get('mode','videos')
                     if not isinstance(query,str) or not 0<len(query.strip())<=300 or any(ord(char)<32 for char in query):raise ValueError('Busca inválida.')
-                    if not isinstance(mode,str) or mode not in ('videos','shorts','live'):raise ValueError('Filtro de busca inválido.')
+                    if not isinstance(mode,str) or mode not in ('videos','shorts','live','podcasts'):raise ValueError('Filtro de busca inválido.')
                     query=query.strip()
                     identity=(query,mode)
                     cache=self.server.cache.get(identity)

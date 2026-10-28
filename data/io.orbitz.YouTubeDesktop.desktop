@@ -1,6 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=Orbitz YouTube Desktop
+Name=YouTube Wrapper - By Orbitz
+Name[en_US]=YouTube Wrapper - By Orbitz
+Name[pt_BR]=YouTube Wrapper - By Orbitz
 Comment=A compact YouTube search and playback app
 Comment[pt_BR]=Um mini app para buscar e assistir vídeos do YouTube
 Exec=orbitz-youtube-desktop

@@ -4,7 +4,7 @@ const vm = require('vm');
 
 const html = fs.readFileSync('app/index.html', 'utf8');
 const ui = html.split("let activeTab='videos'")[1].split("$('settings').onclick")[0];
-const names = ['videos', 'shorts', 'live', 'comments'];
+const names = ['videos', 'shorts', 'live', 'podcasts', 'comments'];
 const makeNode = () => ({
   hidden: false, tabIndex: -1, value: '', disabled: false, children: [], attributes: {},
   setAttribute(key, value) { this.attributes[key] = value; },
@@ -36,7 +36,7 @@ Promise.resolve().then(() => Promise.resolve()).then(() => {
   assert.equal(nodes.get('results').hidden, false);
   assert.equal(nodes.get('comments').hidden, true);
   assert.equal(nodes.get('status').hidden, false);
-  assert.deepEqual(names.map(name => nodes.get(`${name}-tab`).tabIndex), [ -1, 0, -1, -1 ]);
+  assert.deepEqual(names.map(name => nodes.get(`${name}-tab`).tabIndex), [ -1, 0, -1, -1, -1 ]);
 
   nodes.get('query').value = '';
   nodes.get('live-tab').onclick();
@@ -50,7 +50,19 @@ Promise.resolve().then(() => Promise.resolve()).then(() => {
   assert.equal(requests[1].body.query, 'Brasilia');
   assert.equal(requests[1].body.mode, 'live');
   assert.equal(nodes.get('results').attributes['aria-labelledby'], 'live-tab');
-  assert.deepEqual(names.map(name => nodes.get(`${name}-tab`).tabIndex), [ -1, -1, 0, -1 ]);
+  assert.deepEqual(names.map(name => nodes.get(`${name}-tab`).tabIndex), [ -1, -1, 0, -1, -1 ]);
+
+  nodes.get('query').value = '';
+  nodes.get('podcasts-tab').onclick();
+  assert.equal(requests.length, 2, 'empty podcast query never requests generic results');
+  assert.equal(nodes.get('status').uiKey, 'youtube.podcasts_search_hint');
+  nodes.get('query').value = 'Brasilia';
+  nodes.get('podcasts-tab').onclick();
+  return Promise.resolve().then(() => Promise.resolve());
+}).then(() => {
+  assert.equal(requests[2].body.mode, 'podcasts');
+  assert.equal(nodes.get('results').attributes['aria-labelledby'], 'podcasts-tab');
+  assert.deepEqual(names.map(name => nodes.get(`${name}-tab`).tabIndex), [ -1, -1, -1, 0, -1 ]);
 
   let prevented = false;
   nodes.get('view-tabs').onkeydown({ key: 'ArrowDown', preventDefault() { prevented = true; } });
@@ -61,7 +73,7 @@ Promise.resolve().then(() => Promise.resolve()).then(() => {
   assert.equal(nodes.get('videos-tab').focused, true);
   nodes.get('view-tabs').onkeydown({ key: 'End', preventDefault() {} });
   assert.equal(nodes.get('comments-tab').focused, true);
-  console.log('OK: Shorts and Live send distinct search modes; empty Live search stays local; four-tab semantics and keyboard navigation hold.');
+  console.log('OK: Shorts, Live and Podcasts send distinct modes; empty searches stay local; five-tab semantics and keyboard navigation hold.');
 }).catch(error => { console.error(error); process.exitCode = 1; });
 
 for (const locale of ['pt-BR', 'en-US']) {
@@ -71,4 +83,7 @@ for (const locale of ['pt-BR', 'en-US']) {
   assert(catalog['youtube.shorts_search_hint'].includes(locale === 'pt-BR' ? 'Nem todos' : 'may not all'));
   assert.equal(catalog['youtube.live'], locale === 'pt-BR' ? 'Ao vivo' : 'Live');
   assert(catalog['youtube.live_search_hint'].includes(locale === 'pt-BR' ? 'transmissões ao vivo ativas' : 'active live broadcasts'));
+  assert.equal(catalog['youtube.podcasts'], 'Podcasts');
+  assert(catalog['youtube.podcasts_hint'].includes(locale === 'pt-BR' ? 'podcast' : 'podcast'));
+  assert(catalog['youtube.podcasts_search_hint'].includes(locale === 'pt-BR' ? 'episódios de podcast' : 'podcast episodes'));
 }

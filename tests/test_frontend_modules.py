@@ -61,6 +61,11 @@ class YouTubeBoundaryTests(unittest.TestCase):
             self.assertEqual(reply, (200, {'items': items}))
             self.assertIn(('live test', 'live'), handler.server.cache)
             search.assert_called_once_with('live test', 'live')
+        with patch.object(server, 'search', return_value=items) as search:
+            reply, handler = self.request('search', {'query': 'music', 'mode': 'podcasts'})
+            self.assertEqual(reply, (200, {'items': items}))
+            self.assertIn(('music', 'podcasts'), handler.server.cache)
+            search.assert_called_once_with('music', 'podcasts')
 
     def test_api_maps_search_modes_to_official_filters(self):
         response = MagicMock()
@@ -73,16 +78,26 @@ class YouTubeBoundaryTests(unittest.TestCase):
             shorts = urllib.parse.parse_qs(urllib.parse.urlparse(urlopen.call_args.args[0]).query)
             api.search('test', 'live')
             live = urllib.parse.parse_qs(urllib.parse.urlparse(urlopen.call_args.args[0]).query)
+            api.search('test', 'podcasts')
+            podcasts = urllib.parse.parse_qs(urllib.parse.urlparse(urlopen.call_args.args[0]).query)
         self.assertNotIn('videoDuration', regular)
         self.assertNotIn('eventType', regular)
         self.assertEqual(shorts.get('videoDuration'), ['short'])
         self.assertNotIn('eventType', shorts)
         self.assertEqual(live.get('eventType'), ['live'])
         self.assertNotIn('videoDuration', live)
-        for options in (regular, shorts, live):
+        self.assertEqual(podcasts.get('q'), ['podcast test'])
+        for options in (regular, shorts, live, podcasts):
             self.assertEqual(options.get('videoEmbeddable'), ['true'])
         with self.assertRaises(ValueError):
             api.search('test', 'short')
+
+    def test_language_setting_accepts_only_supported_locales(self):
+        with patch.object(server.ui, 'set_locale') as set_locale, patch.object(server.ui, 'get_locale', return_value='en-US'):
+            reply, _ = self.request('language', {'locale': 'en-US'})
+            self.assertEqual(reply, (200, {'saved': True, 'locale': 'en-US'}))
+            set_locale.assert_called_once_with('en-US')
+            self.assertEqual(self.request('language', {'locale': 'fr-FR'})[0][0], 400)
 
     def test_invalid_requests_and_comment_cache(self):
         self.assertEqual(self.request('search', {'query': ''})[0][0], 400)
@@ -105,7 +120,7 @@ class YouTubeBoundaryTests(unittest.TestCase):
         handler.do_GET()
         self.assertEqual(replies[-1][0], 200)
         self.assertEqual(replies[-1][2], 'text/html')
-        self.assertIn(b'<title>YouTube</title>', replies[-1][1])
+        self.assertIn(b'<title>YouTube Wrapper - By Orbitz</title>', replies[-1][1])
 
     def test_local_key_permissions_and_validation(self):
         with tempfile.TemporaryDirectory() as folder, patch.object(api, 'CONFIG', Path(folder) / 'youtube.json'):

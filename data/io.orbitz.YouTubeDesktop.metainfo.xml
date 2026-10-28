@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.orbitz.YouTubeDesktop</id><name>Orbitz YouTube Desktop</name>
+  <summary>A compact YouTube search and playback app</summary>
+  <metadata_license>CC0-1.0</metadata_license><project_license>GPL-3.0-only</project_license>
+  <description><p>Search videos, Shorts, live streams and comments with your own YouTube Data API key, then play them in the official embedded YouTube player. Playback behavior, sign-in and ads are controlled by YouTube and video owners.</p><p>This community app is independent of Google and YouTube.</p></description>
+  <launchable type="desktop-id">io.orbitz.YouTubeDesktop.desktop</launchable>
+  <url type="homepage">https://github.com/orbitzone/orbitz-youtube-desktop</url>
+  <url type="bugtracker">https://github.com/orbitzone/orbitz-youtube-desktop/issues</url>
+  <provides><binary>orbitz-youtube-desktop</binary></provides>
+  <content_rating type="oars-1.1"/><releases><release version="0.1.0" date="2026-10-27"/></releases>
+</component>

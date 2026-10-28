@@ -1,0 +1,38 @@
+name: Linux tests and Flatpak
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  flatpak:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install build and test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.1 desktop-file-utils appstream xvfb
+      - name: Test with isolated data and virtual display
+        run: |
+          export XDG_DATA_HOME="$(mktemp -d)"
+          export XDG_CONFIG_HOME="$(mktemp -d)"
+          GSETTINGS_BACKEND=memory xvfb-run -a /usr/bin/python3 -m unittest discover -s tests -v
+          for test in tests/test_youtube_*.js; do node "$test"; done
+          desktop-file-validate data/io.orbitz.YouTubeDesktop.desktop
+          appstreamcli validate --no-net data/io.orbitz.YouTubeDesktop.metainfo.xml
+      - name: Build Flatpak and check runtime APIs
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak-builder --user --disable-rofiles-fuse --install-deps-from=flathub --assumeyes --repo=repo build-dir packaging/io.orbitz.YouTubeDesktop.json
+          flatpak build build-dir python3 -c "import gi; gi.require_version('WebKit2','4.1'); from gi.repository import WebKit2, Gtk; assert WebKit2 and Gtk; import sys; sys.path.insert(0, '/app/share/orbitz-youtube-desktop/app'); import youtube_api, youtube_server"
+          mkdir -p dist
+          flatpak build-bundle repo dist/orbitz-youtube-desktop-x86_64.flatpak io.orbitz.YouTubeDesktop --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: orbitz-youtube-desktop-x86_64
+          path: dist/*.flatpak
+          if-no-files-found: error

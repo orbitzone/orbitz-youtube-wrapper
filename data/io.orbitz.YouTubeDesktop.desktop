@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Orbitz YouTube Desktop
+Comment=A compact YouTube search and playback app
+Comment[pt_BR]=Um mini app para buscar e assistir vídeos do YouTube
+Exec=orbitz-youtube-desktop
+Icon=io.orbitz.YouTubeDesktop
+Terminal=false
+Categories=AudioVideo;Video;
+StartupNotify=true

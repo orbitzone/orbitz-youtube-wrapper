@@ -1,0 +1,35 @@
+{
+  "app-id": "io.orbitz.YouTubeDesktop",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "49",
+  "sdk": "org.gnome.Sdk",
+  "command": "orbitz-youtube-desktop",
+  "finish-args": [
+    "--share=ipc",
+    "--share=network",
+    "--socket=x11"
+  ],
+  "modules": [
+    {
+      "name": "orbitz-youtube-desktop",
+      "buildsystem": "simple",
+      "build-commands": [
+        "make install PREFIX=/app"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": "..",
+          "skip": [
+            ".git",
+            ".flatpak-builder",
+            "build-dir",
+            "repo",
+            "dist",
+            "__pycache__"
+          ]
+        }
+      ]
+    }
+  ]
+}

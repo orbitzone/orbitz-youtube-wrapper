@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+if [ -z "${DISPLAY:-}" ]; then
+    echo "Orbitz YouTube Desktop requires X11 or XWayland (DISPLAY is unset)." >&2
+    exit 1
+fi
+export GDK_BACKEND=x11
+prefix=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+exec python3 "$prefix/share/orbitz-youtube-desktop/app/youtube-widget.py" "$@"

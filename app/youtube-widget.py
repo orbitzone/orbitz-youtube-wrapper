@@ -7,7 +7,31 @@ import re
 import secrets
 import sys
 import threading
+from urllib.parse import urlsplit
 from youtube_server import make_handler
+
+ALLOWED_EXTERNAL_HOSTS = frozenset({
+    'www.youtube.com',
+    'www.orbit.zone',
+    'console.cloud.google.com',
+})
+
+def is_allowed_external_uri(uri):
+    """Limit WebKit's native external-link bridge to app-owned destinations."""
+    try:
+        parsed = urlsplit(uri)
+        if (parsed.scheme != 'https' or parsed.hostname not in ALLOWED_EXTERNAL_HOSTS
+                or parsed.username is not None or parsed.password is not None
+                or parsed.port not in (None, 443) or parsed.fragment):
+            return False
+        if parsed.hostname == 'www.youtube.com':
+            return (parsed.path == '/' and not parsed.query) or (
+                parsed.path == '/watch' and bool(re.fullmatch(r'v=[A-Za-z0-9_-]{11}', parsed.query)))
+        if parsed.hostname == 'www.orbit.zone':
+            return parsed.path == '/' and not parsed.query
+        return parsed.path == '/apis/credentials' and not parsed.query
+    except (AttributeError, TypeError, ValueError):
+        return False
 
 def target_window_height(state, workarea_height):
     """Return a compact, monitor-bounded height for a page layout state."""
@@ -103,7 +127,7 @@ def main():
         settings.set_media_playback_requires_user_gesture(False)
         def open_external(_manager,result):
             uri=result.get_js_value().to_string()
-            if uri.startswith('https://'):
+            if is_allowed_external_uri(uri):
                 try:Gio.AppInfo.launch_default_for_uri(uri,None)
                 except GLib.Error as error:print(f'Could not open YouTube link: {error}',file=sys.stderr)
         content_manager.connect('script-message-received::orbitzOpenExternal',open_external)

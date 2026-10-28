@@ -8,4 +8,4 @@ Escopo: Linux x86_64/Flatpak/X11 ou XWayland; sem Windows/macOS, Flathub, import
 
 ## Validação local pré-publicação (27/10/2026)
 
-16 testes Python e quatro testes JavaScript passaram; `py_compile`, `desktop-file-validate`, `appstreamcli validate --no-net`, parse do manifesto Flatpak e `git diff --cached --check` passaram. Esses testes usam dados sintéticos e não consultam YouTube/Google. O build Flatpak, a execução gráfica em distribuições distintas e a reprodução com chave/conta reais dependem do CI e de validação manual posterior.
+17 testes Python e quatro testes JavaScript passaram; `py_compile`, `desktop-file-validate`, `appstreamcli validate --no-net`, parse do manifesto Flatpak e `git diff --cached --check` passaram. Esses testes usam dados sintéticos e não consultam YouTube/Google. O build Flatpak, a execução gráfica em distribuições distintas e a reprodução com chave/conta reais dependem do CI e de validação manual posterior.

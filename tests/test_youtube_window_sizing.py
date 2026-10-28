@@ -12,6 +12,31 @@ spec.loader.exec_module(youtube_widget)
 
 
 class YouTubeWindowSizingTests(unittest.TestCase):
+    def test_external_link_bridge_rejects_untrusted_hosts_and_uri_forms(self):
+        allowed = youtube_widget.is_allowed_external_uri
+        for uri in (
+            'https://www.youtube.com/watch?v=abcdefghijk',
+            'https://www.orbit.zone/',
+            'https://console.cloud.google.com/apis/credentials',
+            'https://www.youtube.com:443/',
+            'https://www.youtube.com/watch?v=abcdefghijk',
+        ):
+            self.assertTrue(allowed(uri), uri)
+        for uri in (
+            'https://attacker.example/',
+            'https://www.youtube.com.attacker.example/',
+            'https://www.youtube.com@attacker.example/',
+            'https://user@www.youtube.com/',
+            'https://www.youtube.com:444/',
+            'https://www.youtube.com/redirect?q=https://attacker.example',
+            'https://www.youtube.com/watch?v=abcdefghijk&feature=redirect',
+            'https://console.cloud.google.com/redirect',
+            'http://www.youtube.com/',
+            'javascript:alert(1)',
+            'not a URL',
+        ):
+            self.assertFalse(allowed(uri), uri)
+
     def test_idle_window_already_fits_four_search_results(self):
         height = youtube_widget.target_window_height
         self.assertEqual(height('idle', 1000), 520)

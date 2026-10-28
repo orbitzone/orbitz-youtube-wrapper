@@ -1,4 +1,5 @@
 import importlib.util
+import json
 from pathlib import Path
 import sys
 import unittest
@@ -19,6 +20,14 @@ class YouTubeWindowSizingTests(unittest.TestCase):
         for message in ('', 'settings', 'other-token\nsettings', '☃\nsettings',
                         'x' * 4097, 'session-token', None):
             self.assertIsNone(payload(message, 'session-token'))
+
+    def test_flatpak_manifest_exposes_only_the_required_audio_socket(self):
+        manifest = json.loads((ROOT / 'packaging/io.orbitz.YouTubeDesktop.json').read_text())
+        permissions = manifest['finish-args']
+        self.assertIn('--socket=pulseaudio', permissions)
+        self.assertIn('--socket=x11', permissions)
+        self.assertIn('--share=network', permissions)
+        self.assertNotIn('--device=all', permissions)
 
     def test_flatpak_icon_has_square_canvas(self):
         icon = ET.parse(YOUTUBE_DIR / 'youtube.svg').getroot()

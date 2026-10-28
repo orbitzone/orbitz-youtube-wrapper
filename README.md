@@ -35,7 +35,7 @@ O ícone também aparece no menu. Para fechar, feche a janela. Não há início 
 
 O mini app usa GTK 3, WebKitGTK 4.1, X11 e conectividade de rede. Sessões Wayland precisam de XWayland; Wayland sem XWayland não é suportado. Janela centralizada, tela cheia, reprodução incorporada e aplicações padrão variam entre gerenciadores/portais. A compatibilidade visual em GNOME/KDE/Xfce reais ainda requer teste.
 
-O Flatpak precisa de rede para falar com Google/YouTube e acesso X11 para a interface atual. Não recebe acesso geral à pasta pessoal. URLs e consultas seguem para os servidores do YouTube; a chave de API é enviada à API oficial pelo próprio aplicativo. Não há telemetria nem sincronização própria. Revisar termos/quotas da Google API e a política do YouTube antes de usar.
+O Flatpak precisa de rede para falar com Google/YouTube, acesso X11 para a interface e acesso ao socket PulseAudio para reproduzir o áudio dos vídeos. Não recebe acesso geral à pasta pessoal. URLs e consultas seguem para os servidores do YouTube; a chave de API é enviada à API oficial pelo próprio aplicativo. Não há telemetria nem sincronização própria. Revisar termos/quotas da Google API e a política do YouTube antes de usar.
 
 ## Compilar
 

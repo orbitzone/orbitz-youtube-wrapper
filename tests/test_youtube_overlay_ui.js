@@ -50,6 +50,7 @@ const context = vm.createContext({
   uiText(node, value) { node.textContent = value; }, uiErrorText(node, error) { node.textContent = error.message; },
   searchCurrentTab() {}, setTab() {},
   selected: 'abcdefghijk',
+  bridgeToken: 'synthetic-token',
 });
 const start = html.indexOf("$('settings').onclick=()=>openSettings();");
 const end = html.indexOf('function renderResults', start);
@@ -60,13 +61,13 @@ listeners.click({
   preventDefault() { externalClickPrevented = true; },
 });
 assert(externalClickPrevented, 'explicit outer links avoid WebKit popup routing');
-assert.deepEqual(externalRequests, ['https://www.orbit.zone'], 'orbit.zone uses the native external-link bridge');
+assert.deepEqual(externalRequests, ['synthetic-token\nhttps://www.orbit.zone'], 'orbit.zone uses the authenticated native external-link bridge');
 nodes.get('copy-video-link').onclick();
-assert.deepEqual(copiedLinks, ['https://www.youtube.com/watch?v=abcdefghijk'], 'copy button sends only the selected video URL to the clipboard bridge');
+assert.deepEqual(copiedLinks, ['synthetic-token\nhttps://www.youtube.com/watch?v=abcdefghijk'], 'copy button authenticates its native clipboard bridge request');
 
 nodes.get('settings').onclick();
 assert.equal(nodes.get('config').hidden, false);
-assert.equal(windowStates.at(-1), 'settings', 'opening Settings requests its content height');
+assert.equal(windowStates.at(-1), 'synthetic-token\nsettings', 'opening Settings sends an authenticated size request');
 assert.equal(document.activeElement, nodes.get('key'), 'opening Settings focuses the API key field');
 let prevented = false;
 document.activeElement = focusables[focusables.length - 1];
@@ -93,11 +94,11 @@ Promise.resolve().then(() => Promise.resolve()).then(() => {
 
 nodes.get('query').handlers.focus();
 assert.equal(nodes.get('discovery').hidden, false, 'search focus opens the dropdown');
-assert.equal(windowStates.at(-1), 'panel', 'opening search requests panel height');
+assert.equal(windowStates.at(-1), 'synthetic-token\npanel', 'opening search sends authenticated panel height');
 nodes.get('settings').onclick();
-assert.equal(windowStates.at(-1), 'panel', 'Settings preserves an open search panel height');
+assert.equal(windowStates.at(-1), 'synthetic-token\npanel', 'Settings preserves an open search panel height');
 nodes.get('config-close').onclick();
-assert.equal(windowStates.at(-1), 'panel', 'closing Settings restores the search panel target');
+assert.equal(windowStates.at(-1), 'synthetic-token\npanel', 'closing Settings restores the search panel target');
 listeners.pointerdown({ target: { insideDiscovery: true } });
 assert.equal(nodes.get('discovery').hidden, false, 'interaction inside the dropdown keeps it open');
 listeners.pointerdown({ target: {} });
@@ -108,15 +109,15 @@ assert.equal(nodes.get('discovery').hidden, true, 'keyboard focus outside closes
 nodes.get('discovery').hidden = false;
 listeners.keydown({ key: 'Escape', preventDefault() {} });
 assert.equal(nodes.get('discovery').hidden, true, 'Escape closes the dropdown');
-assert.equal(windowStates.at(-1), 'idle', 'closing an empty search panel requests compact idle height');
+assert.equal(windowStates.at(-1), 'synthetic-token\nidle', 'closing an empty search panel requests authenticated compact idle height');
 nodes.get('screen').hidden = false;
 nodes.get('discovery').hidden = false;
 listeners.keydown({ key: 'Escape', preventDefault() {} });
-assert.equal(windowStates.at(-1), 'player', 'closing the panel preserves the expanded player layout');
+assert.equal(windowStates.at(-1), 'synthetic-token\nplayer', 'closing the panel preserves the authenticated expanded player layout');
 nodes.get('settings').onclick();
-assert.equal(windowStates.at(-1), 'player', 'Settings preserves an active player height');
+assert.equal(windowStates.at(-1), 'synthetic-token\nplayer', 'Settings preserves an active player height');
 nodes.get('config-close').onclick();
-assert.equal(windowStates.at(-1), 'player', 'closing Settings restores the active player target');
+assert.equal(windowStates.at(-1), 'synthetic-token\nplayer', 'closing Settings restores the active player target');
 
 console.log('OK: YouTube settings are a fixed accessible modal; search results open as an outside-dismissible dropdown.');
 }).catch(error => { console.error(error); process.exitCode = 1; });

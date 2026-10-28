@@ -33,6 +33,16 @@ def is_allowed_external_uri(uri):
     except (AttributeError, TypeError, ValueError):
         return False
 
+def bridge_payload(message, session_token):
+    """Accept native bridge messages only from the token-bearing top-level page."""
+    if not isinstance(message, str) or len(message) > 4096 or not session_token:
+        return None
+    supplied_token, separator, payload = message.partition('\n')
+    if (not separator or not supplied_token.isascii() or not session_token.isascii()
+            or not secrets.compare_digest(supplied_token, session_token)):
+        return None
+    return payload
+
 def target_window_height(state, workarea_height):
     """Return a compact, monitor-bounded height for a page layout state."""
     # Keep enough room for four search results even before the dropdown opens.
@@ -116,8 +126,10 @@ def main():
         content_manager.register_script_message_handler('orbitzWindow')
         content_manager.register_script_message_handler('orbitzOpenExternal')
         content_manager.register_script_message_handler('orbitzCopyLink')
-        content_manager.connect('script-message-received::orbitzWindow',
-            lambda _manager,result:request_page_size(result.get_js_value().to_string()))
+        def resize_message(_manager,result):
+            state=bridge_payload(result.get_js_value().to_string(),token)
+            if state in ('idle','settings','panel','player'):request_page_size(state)
+        content_manager.connect('script-message-received::orbitzWindow',resize_message)
         view=WebKit2.WebView.new_with_user_content_manager(content_manager)
         settings=view.get_settings()
         settings.set_property('enable-developer-extras',False)
@@ -126,13 +138,14 @@ def main():
         settings.set_property('enable-fullscreen',True)
         settings.set_media_playback_requires_user_gesture(False)
         def open_external(_manager,result):
-            uri=result.get_js_value().to_string()
-            if is_allowed_external_uri(uri):
+            uri=bridge_payload(result.get_js_value().to_string(),token)
+            if uri and is_allowed_external_uri(uri):
                 try:Gio.AppInfo.launch_default_for_uri(uri,None)
                 except GLib.Error as error:print(f'Could not open YouTube link: {error}',file=sys.stderr)
         content_manager.connect('script-message-received::orbitzOpenExternal',open_external)
         def copy_youtube_link(_manager,result):
-            uri=result.get_js_value().to_string()
+            uri=bridge_payload(result.get_js_value().to_string(),token)
+            if not uri:return
             if not re.fullmatch(r'https://www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}',uri):return
             clipboard=Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
             clipboard.set_text(uri,-1)

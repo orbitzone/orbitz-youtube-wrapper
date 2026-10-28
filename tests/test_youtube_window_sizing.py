@@ -13,6 +13,13 @@ spec.loader.exec_module(youtube_widget)
 
 
 class YouTubeWindowSizingTests(unittest.TestCase):
+    def test_native_bridge_requires_the_current_session_token(self):
+        payload = youtube_widget.bridge_payload
+        self.assertEqual(payload('session-token\nsettings', 'session-token'), 'settings')
+        for message in ('', 'settings', 'other-token\nsettings', '☃\nsettings',
+                        'x' * 4097, 'session-token', None):
+            self.assertIsNone(payload(message, 'session-token'))
+
     def test_flatpak_icon_has_square_canvas(self):
         icon = ET.parse(YOUTUBE_DIR / 'youtube.svg').getroot()
         self.assertEqual(icon.attrib['width'], icon.attrib['height'])
@@ -75,7 +82,8 @@ class YouTubeWindowSizingTests(unittest.TestCase):
         self.assertIn('#screen{aspect-ratio:auto;height:clamp(220px,calc(100vh - 110px),2000px)', html)
         self.assertIn('#results button{align-items:center;min-height:80px}', html)
         self.assertIn("function windowLayoutState(){if(!$('config').hidden&&$('discovery').hidden&&$('screen').hidden)return 'settings';return $('discovery').hidden?($('screen').hidden?'idle':'player'):'panel'}", html)
-        self.assertIn("bridge.postMessage(windowLayoutState())", html)
+        self.assertIn("const bridgeToken=location.pathname.split('/')[1]||''", html)
+        self.assertIn("bridge.postMessage(bridgeToken+'\\n'+windowLayoutState())", html)
         self.assertIn("$('query').addEventListener('input',()=>{++sequence;$('submit').disabled=false;});", html)
 
     def test_youtube_iframe_fullscreen_is_enabled_in_webkit_and_handled_by_gtk(self):
